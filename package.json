@@ -1,0 +1,68 @@
+{
+  "name": "metaowl",
+  "version": "0.1.0",
+  "description": "Lightweight meta-framework for Odoo OWL — file-based routing, app mounting, Fetch helper, Cache, Meta tags, SSG generator, and a Vite plugin.",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./vite": "./vite/plugin.js",
+    "./eslint": "./eslint.js",
+    "./postcss": "./postcss.cjs"
+  },
+  "bin": {
+    "metaowl-create": "./bin/metaowl-create.js",
+    "metaowl-dev": "./bin/metaowl-dev.js",
+    "metaowl-build": "./bin/metaowl-build.js",
+    "metaowl-generate": "./bin/metaowl-generate.js",
+    "metaowl-lint": "./bin/metaowl-lint.js"
+  },
+  "keywords": [
+    "owl",
+    "odoo",
+    "framework",
+    "vite",
+    "meta-framework"
+  ],
+  "author": "Dennis Schott",
+  "license": "LGPL-3.0-only",
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dennisschott/metaowl"
+  },
+  "homepage": "https://github.com/dennisschott/metaowl#readme",
+  "bugs": {
+    "url": "https://github.com/dennisschott/metaowl/issues"
+  },
+  "dependencies": {
+    "@eslint/js": "^9.20.1",
+    "@fullhuman/postcss-purgecss": "^6.0.0",
+    "@odoo/owl": "^2.8.2",
+    "@typescript-eslint/eslint-plugin": "^8.24.1",
+    "@typescript-eslint/parser": "^8.24.1",
+    "dotenv": "^16.4.7",
+    "eslint": "^9.20.1",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-n": "^17.15.1",
+    "eslint-plugin-promise": "^7.2.1",
+    "glob": "^13.0.6",
+    "globals": "^13.24.0",
+    "prettier": "3.5.1",
+    "vite": "^7.3.1",
+    "vite-plugin-handlebars": "^2.0.0",
+    "vite-plugin-restart": "^2.0.0",
+    "vite-tsconfig-paths": "^6.1.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "jsdom": "^28.1.0",
+    "vitest": "^4.0.18"
+  }
+}
