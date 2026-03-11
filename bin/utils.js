@@ -2,7 +2,7 @@
  * Shared CLI utilities for metaowl bin scripts.
  * Uses ANSI escape codes only when stdout is a TTY (no color when piped).
  */
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { execSync } from 'node:child_process'
@@ -10,9 +10,30 @@ import { execSync } from 'node:child_process'
 export const metaowlRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 export const bin = resolve(metaowlRoot, 'node_modules/.bin')
 export const cwd = process.cwd()
+const cwdBin = resolve(cwd, 'node_modules/.bin')
 
 const { version } = JSON.parse(readFileSync(resolve(metaowlRoot, 'package.json'), 'utf-8'))
 export { version }
+
+/**
+ * Resolve an executable path with fallback for hoisted installs.
+ * Priority:
+ * 1) metaowl-local node_modules/.bin
+ * 2) project node_modules/.bin
+ * 3) command name (PATH lookup by shell)
+ *
+ * @param {string} name
+ * @returns {string}
+ */
+export function resolveBin(name) {
+  const local = resolve(bin, name)
+  if (existsSync(local)) return local
+
+  const project = resolve(cwdBin, name)
+  if (existsSync(project)) return project
+
+  return name
+}
 
 const TTY = Boolean(process.stdout.isTTY)
 const a = (str, code) => TTY ? `\x1b[${code}m${str}\x1b[0m` : str

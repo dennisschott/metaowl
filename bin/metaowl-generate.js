@@ -13,7 +13,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { globSync } from 'glob'
-import { banner, bin, cwd, metaowlRoot, run, step, success, failure } from './utils.js'
+import { banner, cwd, metaowlRoot, resolveBin, run, step, success, failure } from './utils.js'
 
 banner('generate')
 
@@ -142,7 +142,7 @@ function buildShell(baseHtml, pageFile) {
 run('Linting', `node "${metaowlRoot}/bin/metaowl-lint.js"`)
 
 // 2. Vite build
-run('Building', `"${bin}/vite" build`)
+run('Building', `"${resolveBin('vite')}" build`)
 
 // 3. SSG post-processing
 step('Generating static pages...')

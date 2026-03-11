@@ -12,7 +12,7 @@ import { execSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { globSync } from 'glob'
-import { banner, bin, cwd, step, success, failure } from './utils.js'
+import { banner, cwd, resolveBin, step, success, failure } from './utils.js'
 
 banner('lint')
 
@@ -49,7 +49,7 @@ const targets = existing.map(t => `"${t}"`).join(' ')
 step('Formatting with Prettier...')
 console.log()
 try {
-  execSync(`"${bin}/prettier" src --single-quote --no-semi --write`, { stdio: 'inherit', cwd })
+  execSync(`"${resolveBin('prettier')}" src --single-quote --no-semi --write`, { stdio: 'inherit', cwd })
 } catch {
   failure('Prettier failed')
   process.exit(1)
@@ -59,7 +59,7 @@ console.log()
 step('Linting with ESLint...')
 console.log()
 try {
-  execSync(`"${bin}/eslint" ${targets} --fix`, { stdio: 'inherit', cwd })
+  execSync(`"${resolveBin('eslint')}" ${targets} --fix`, { stdio: 'inherit', cwd })
 } catch {
   failure('ESLint failed')
   process.exit(1)
