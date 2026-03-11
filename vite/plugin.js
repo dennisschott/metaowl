@@ -1,10 +1,19 @@
 import { fileURLToPath } from 'node:url'
 import { resolve, dirname } from 'node:path'
 import { mkdirSync, copyFileSync, cpSync, existsSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import { globSync } from 'glob'
 import { config as dotenvConfig } from 'dotenv'
 import ViteRestart from 'vite-plugin-restart'
 import tsconfigPaths from 'vite-tsconfig-paths'
+
+const require = createRequire(import.meta.url)
+
+function resolveOwlPath() {
+  return require.resolve('@odoo/owl/dist/owl.es.js', {
+    paths: [process.cwd(), dirname(fileURLToPath(import.meta.url))]
+  })
+}
 
 /**
  * Collect all .xml files from a directory glob and return them as
@@ -91,7 +100,7 @@ export function metaowlPlugin(options = {}) {
         cfg.publicDir = cfg.publicDir ?? publicDir
         cfg.appType = cfg.appType ?? 'spa'
 
-        const owlPath = fileURLToPath(new URL('../node_modules/@odoo/owl/dist/owl.es.js', import.meta.url))
+        const owlPath = resolveOwlPath()
         cfg.resolve = {
           ...(cfg.resolve ?? {}),
           alias: {
