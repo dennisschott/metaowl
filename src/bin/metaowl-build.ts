@@ -9,4 +9,3 @@ run('Linting', `node "${metaowlRoot}/bin/metaowl-lint.js"`)
 run('Building', `"${resolveBin('vite')}" build`)
 success('Build complete')
 console.log()
-

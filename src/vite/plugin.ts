@@ -6,42 +6,33 @@ import { globSync } from 'glob'
 import { config as dotenvConfig } from 'dotenv'
 import ViteRestart from 'vite-plugin-restart'
 import tsconfigPaths from 'vite-tsconfig-paths'
+import type { Plugin, UserConfig } from 'vite'
 
 const require = createRequire(import.meta.url)
 
-function resolveOwlPath() {
+function resolveOwlPath(): string {
   return require.resolve('@odoo/owl/dist/owl.es.js', {
     paths: [process.cwd(), dirname(fileURLToPath(import.meta.url))]
   })
 }
 
-/**
- * Collect all .xml files from a directory glob and return them as
- * URL-style paths (e.g. /components/Header/Header.xml).
- *
- * @param {string} globPattern - e.g. 'src/components/**\/*.xml'
- * @returns {string[]}
- */
-function collectXml(globPattern) {
+function collectXml(globPattern: string): string[] {
   return globSync(globPattern).map(p => p.replace(/^src[\\/]/, '/'))
 }
 
-/**
- * metaowl Vite plugin.
- *
- * @param {object} [options]
- * @param {string} [options.root='src'] - Vite root directory.
- * @param {string} [options.outDir='../dist'] - Build output directory.
- * @param {string} [options.publicDir='../public'] - Public assets directory.
- * @param {string} [options.componentsDir='src/components'] - OWL components directory.
- * @param {string} [options.pagesDir='src/pages'] - OWL pages directory.
- * @param {string[]} [options.restartGlobs] - Additional globs that trigger dev-server restart.
- * @param {string} [options.frameworkEntry] - Framework entry for manual chunk.
- * @param {string[]} [options.vendorPackages] - npm packages bundled into the vendor chunk.
- * @param {string} [options.envPrefix] - Only expose env vars with this prefix (plus NODE_ENV) via process.env. Defaults to nothing extra (only NODE_ENV).
- * @returns {import('vite').Plugin[]}
- */
-export function metaowlPlugin(options = {}) {
+export interface MetaowlPluginOptions {
+  root?: string
+  outDir?: string
+  publicDir?: string
+  componentsDir?: string
+  pagesDir?: string
+  restartGlobs?: string[]
+  frameworkEntry?: string
+  vendorPackages?: string[]
+  envPrefix?: string
+}
+
+export function metaowlPlugin(options: MetaowlPluginOptions = {}): Plugin[] {
   const {
     root = 'src',
     outDir = '../dist',
@@ -49,7 +40,7 @@ export function metaowlPlugin(options = {}) {
     componentsDir = 'src/components',
     pagesDir = 'src/pages',
     restartGlobs = [],
-    frameworkEntry = './node_modules/metaowl/index.js',
+    frameworkEntry = './node_modules/metaowl/dist/index.js',
     vendorPackages = ['@odoo/owl']
   } = options
 
@@ -65,23 +56,20 @@ export function metaowlPlugin(options = {}) {
     `${root}/**/*.scss`
   ]
 
-  let _outDirResolved = null
+  let _outDirResolved: string | null = null
 
   return [
-    tsconfigPaths({ root: process.cwd() }),
+    tsconfigPaths({ root: process.cwd() }) as Plugin,
     ViteRestart({
       restart: [...defaultRestartGlobs, ...restartGlobs]
-    }),
+    }) as Plugin,
     {
       name: 'metaowl:define',
       config(cfg, { mode }) {
-        // Load .env file from project root
         dotenvConfig()
 
         const isDev = mode === 'development'
 
-        // Expose only NODE_ENV + vars matching the configured prefix.
-        // Never expose the full system env to avoid leaking secrets.
         const { envPrefix } = options
         const safeEnv = Object.fromEntries(
           Object.entries(process.env).filter(([k]) =>
@@ -144,7 +132,7 @@ export function metaowlPlugin(options = {}) {
       name: 'metaowl:app',
       transform(code, id) {
         if (!id.endsWith('/metaowl.js')) return
-        const pagesRel = pagesDir.replace(new RegExp(`^${root}[\\/]`), '')
+        const pagesRel = pagesDir.replace(new RegExp(`^${root}[\\\\/]`), '')
         return {
           code: code.replace(
             /boot\(\s*\)/,
@@ -158,8 +146,8 @@ export function metaowlPlugin(options = {}) {
       name: 'metaowl:styles',
       transform(code, id) {
         if (!id.endsWith('/css.js')) return
-        const compRel = componentsDir.replace(new RegExp(`^${root}[\\/]`), '')
-        const pagesRel = pagesDir.replace(new RegExp(`^${root}[\\/]`), '')
+        const compRel = componentsDir.replace(new RegExp(`^${root}[\\\\/]`), '')
+        const pagesRel = pagesDir.replace(new RegExp(`^${root}[\\\\/]`), '')
         return {
           code: code + '\n' +
             `import.meta.glob('/${compRel}/**/*.{css,scss}', { eager: true })\n` +
@@ -172,18 +160,17 @@ export function metaowlPlugin(options = {}) {
       name: 'metaowl:copy-assets',
       apply: 'build',
       closeBundle() {
+        if (!_outDirResolved) return
         const projectRoot = process.cwd()
 
-        // Copy OWL XML templates (loaded at runtime via fetch — not processed by Vite)
         const xmlFiles = globSync([`${componentsDir}/**/*.xml`, `${pagesDir}/**/*.xml`])
         for (const xmlFile of xmlFiles) {
-          const relPath = xmlFile.replace(new RegExp(`^${root}[\\/]`), '')
+          const relPath = xmlFile.replace(new RegExp(`^${root}[\\\\/]`), '')
           const dest = resolve(_outDirResolved, relPath)
           mkdirSync(dirname(dest), { recursive: true })
           copyFileSync(resolve(projectRoot, xmlFile), dest)
         }
 
-        // Copy assets/images (referenced via absolute URLs in XML — not processed by Vite)
         const srcImages = resolve(projectRoot, root, 'assets', 'images')
         if (existsSync(srcImages)) {
           cpSync(srcImages, resolve(_outDirResolved, 'assets', 'images'), { recursive: true })
@@ -193,28 +180,13 @@ export function metaowlPlugin(options = {}) {
   ]
 }
 
-/**
- * Convenience wrapper that returns a complete Vite config with metaowl defaults.
- * All options except `server`, `preview` and `build` are forwarded to metaowlPlugin().
- *
- * Usage in vite.config.js:
- *
- *   import { metaowlConfig } from 'metaowl/vite'
- *   export default metaowlConfig({
- *     server: { port: 3333 },
- *     preview: { port: 8095 },
- *     envPrefix: 'MY_',
- *     vendorPackages: ['@odoo/owl', 'apexcharts']
- *   })
- *
- * @param {object} [options]
- * @param {object} [options.server]  - Vite server config overrides (merged with defaults).
- * @param {object} [options.preview] - Vite preview config overrides (merged with defaults).
- * @param {object} [options.build]   - Vite build config overrides.
- * @param {*}      [options.*]       - All other options forwarded to metaowlPlugin().
- * @returns {import('vite').UserConfig}
- */
-export function metaowlConfig(options = {}) {
+export interface MetaowlConfigOptions extends MetaowlPluginOptions {
+  server?: UserConfig['server']
+  preview?: UserConfig['preview']
+  build?: UserConfig['build']
+}
+
+export function metaowlConfig(options: MetaowlConfigOptions = {}): UserConfig {
   const { server, preview, build, ...metaowlOptions } = options
   return {
     server: { port: 3000, strictPort: true, host: true, ...server },

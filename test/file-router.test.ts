@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildRoutes } from '../modules/file-router.js'
+import { buildRoutes } from '../src/modules/file-router.js'
 
 const Comp = function IndexPage() {}
 const About = function AboutPage() {}

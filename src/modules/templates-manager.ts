@@ -4,10 +4,10 @@ import { loadFile } from '@odoo/owl'
  * Loads and concatenates a list of OWL XML template files into a single
  * `<templates>` string ready to be passed to OWL's mount() options.
  *
- * @param {string[]} files - Array of URL-style XML paths, e.g. ['/owl/components/Header/Header.xml']
- * @returns {Promise<string>}
+ * @param files - Array of URL-style XML paths, e.g. ['/owl/components/Header/Header.xml']
+ * @returns The concatenated templates string
  */
-export async function mergeTemplates(files) {
+export async function mergeTemplates(files: string[]): Promise<string> {
   let templates = '<templates>'
   for (const file of files) {
     try {

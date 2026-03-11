@@ -1,15 +1,14 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import Cache from '../modules/cache.js'
+import Cache from '../src/modules/cache.js'
 
-// Minimal localStorage stub
-const store = {}
+const store: Record<string, string> = {}
 const localStorageMock = {
-  getItem: (k) => store[k] ?? null,
-  setItem: (k, v) => { store[k] = v },
-  removeItem: (k) => { delete store[k] },
-  clear: () => { Object.keys(store).forEach(k => delete store[k]) },
-  get length() { return Object.keys(store).length },
-  key: (i) => Object.keys(store)[i] ?? null
+  getItem: (k: string): string | null => store[k] ?? null,
+  setItem: (k: string, v: string): void => { store[k] = v },
+  removeItem: (k: string): void => { delete store[k] },
+  clear: (): void => { Object.keys(store).forEach(k => delete store[k]) },
+  get length(): number { return Object.keys(store).length },
+  key: (i: number): string | null => Object.keys(store)[i] ?? null
 }
 Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock, writable: true })
 

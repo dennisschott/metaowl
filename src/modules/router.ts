@@ -1,13 +1,17 @@
+import type { Route, RouteTable } from '../types.js'
+
 /**
  * Resolves the current URL against a route table.
  * Used internally by processRoutes().
  */
 class Router {
-  constructor(routes) {
+  private routes: RouteTable
+
+  constructor(routes: RouteTable) {
     this.routes = routes
   }
 
-  resolve() {
+  resolve(): RouteTable {
     const match = this.routes.filter(route =>
       (typeof route.path === 'string' && document.location.pathname === route.path) ||
       (Array.isArray(route.path) && route.path.includes(document.location.pathname))
@@ -25,11 +29,11 @@ class Router {
  * Injects SSG-compatible path variants for a route:
  * trailing slash, .html suffix, /index.html suffix.
  *
- * @param {object} route
- * @param {string} path
- * @returns {object}
+ * @param route - The route to modify
+ * @param path - The path to inject variants for
+ * @returns The modified route
  */
-function injectSystemRoutes(route, path) {
+function injectSystemRoutes(route: Route, path: string): Route {
   if (path === '/') {
     if (!route.path.includes('/index.html')) route.path.push('/index.html')
   } else {
@@ -44,10 +48,10 @@ function injectSystemRoutes(route, path) {
 /**
  * Expands all routes with SSG path variants, then resolves the current URL.
  *
- * @param {object[]} routes
- * @returns {Promise<object[]>}
+ * @param routes - The route table
+ * @returns The matched route(s)
  */
-export async function processRoutes(routes) {
+export async function processRoutes(routes: RouteTable): Promise<RouteTable> {
   for (const route of routes) {
     const originalPaths = [...route.path]
     for (const path of originalPaths) {
@@ -59,4 +63,3 @@ export async function processRoutes(routes) {
 
   return new Router(routes).resolve()
 }
-

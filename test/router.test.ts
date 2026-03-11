@@ -1,14 +1,13 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { processRoutes } from '../modules/router.js'
+import { processRoutes } from '../src/modules/router.js'
 
 const Comp = function Page() {}
 
-function makeRoute(path) {
+function makeRoute(path: string) {
   return { name: 'page', path: [path], component: Comp }
 }
 
-// Stub document.location for each test
-function setPath(pathname) {
+function setPath(pathname: string): void {
   Object.defineProperty(globalThis, 'document', {
     value: { location: { pathname } },
     writable: true,
@@ -67,10 +66,8 @@ describe('processRoutes', () => {
     setPath('/')
     const route = makeRoute('/')
     await processRoutes([route])
-    const countBefore = route.path.length
     setPath('/index.html')
     await processRoutes([route])
-    // /index.html should still only appear once
     const indexHtmlCount = route.path.filter(p => p === '/index.html').length
     expect(indexHtmlCount).toBe(1)
   })

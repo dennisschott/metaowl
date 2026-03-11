@@ -16,9 +16,15 @@ import { banner, cwd, resolveBin, step, success, failure } from './utils.js'
 
 banner('lint')
 
-let lintTargets = null
+interface PackageJson {
+  metaowl?: {
+    lint?: string[]
+  }
+}
+
+let lintTargets: string[] | null = null
 try {
-  const pkg = JSON.parse(readFileSync(resolve(cwd, 'package.json'), 'utf8'))
+  const pkg = JSON.parse(readFileSync(resolve(cwd, 'package.json'), 'utf8')) as PackageJson
   lintTargets = pkg?.metaowl?.lint ?? null
 } catch {
   // no package.json or no metaowl config
@@ -68,4 +74,3 @@ console.log()
 
 success('Lint complete')
 console.log()
-

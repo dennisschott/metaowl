@@ -1,21 +1,22 @@
 import { mount } from '@odoo/owl'
 import { mergeTemplates } from './templates-manager.js'
+import type { OwlConfig, RouteTable } from '../types.js'
 
-const _defaults = {
+const _defaults: OwlConfig = {
   warnIfNoStaticProps: true,
   willStartTimeout: 10000,
   translatableAttributes: ['title', 'placeholder', 'label', 'alt']
 }
 
-let _config = { ..._defaults }
+let _config: OwlConfig = { ..._defaults }
 
 /**
  * Override or extend the default OWL mount configuration.
  * Call before boot() in your project's metaowl.js.
  *
- * @param {object} config - Partial OWL config merged over the defaults.
+ * @param config - Partial OWL config merged over the defaults.
  */
-export function configureOwl(config) {
+export function configureOwl(config: Partial<OwlConfig>): void {
   _config = { ..._defaults, ...config }
 }
 
@@ -26,14 +27,18 @@ export function configureOwl(config) {
  * metaowl Vite plugin via the `COMPONENTS` define), then mounts the component
  * using the active OWL config.
  *
- * @param {object[]} route - Single-element array returned by `processRoutes()`.
- * @returns {Promise<void>}
+ * @param route - Single-element array returned by `processRoutes()`.
  */
-export async function mountApp(route) {
+export async function mountApp(route: RouteTable): Promise<void> {
   // COMPONENTS is a string[] injected at build time by the metaowl Vite plugin
   const components = typeof COMPONENTS !== 'undefined' ? COMPONENTS : []
   const templates = await mergeTemplates(components)
   const mountElement = document.getElementById('metaowl')
+  
+  if (!mountElement) {
+    throw new Error('[metaowl] Could not find #metaowl element to mount app')
+  }
+  
   mountElement.innerHTML = ''
 
   await mount(route[0].component, mountElement, { ..._config, templates })

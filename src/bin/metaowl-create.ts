@@ -40,7 +40,7 @@ step(`Scaffolding project "${name}"...`)
 console.log()
 
 // --- File writer helper ---
-function write(filePath, content) {
+function write(filePath: string, content: string): void {
   const abs = join(dest, filePath)
   mkdirSync(dirname(abs), { recursive: true })
   writeFileSync(abs, content, 'utf-8')
@@ -118,149 +118,60 @@ write('src/index.html',
   </head>
   <body>
     <div id="metaowl"></div>
-    <script type="module" src="/metaowl.js"></script>
+    <script type="module" src="./metaowl.js"></script>
   </body>
 </html>
 `)
 
 // --- src/metaowl.js ---
 write('src/metaowl.js',
-`import { boot, Fetch } from 'metaowl'
-
-Fetch.configure({
-  baseUrl: import.meta.env.VITE_API_URL ?? ''
-})
+`import { boot } from 'metaowl'
+import './css.js'
 
 boot()
 `)
 
 // --- src/css.js ---
 write('src/css.js',
-`// Global styles — import shared CSS here.
-// Component and page CSS files are auto-imported by the metaowl Vite plugin.
+`// Base styles
+import './css/main.css'
+`)
+
+// --- src/css/main.css ---
+write('src/css/main.css',
+`/* Base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+}
 `)
 
 // --- src/pages/index/Index.js ---
 write('src/pages/index/Index.js',
-`import { Component } from '@odoo/owl'
+`import { Component, xml } from '@odoo/owl'
 import { Meta } from 'metaowl'
-import AppHeader from '@components/AppHeader/AppHeader'
-import AppFooter from '@components/AppFooter/AppFooter'
 
-export default class Index extends Component {
-  static template = 'Index'
-  static components = { AppHeader, AppFooter }
+Meta.title('Home')
 
-  setup() {
-    Meta.title('Home — ${name}')
-  }
-}
-`)
-
-// --- src/pages/index/Index.xml ---
-write('src/pages/index/Index.xml',
-`<templates>
-  <t t-name="Index">
-    <div class="layout">
-      <AppHeader />
-      <main class="page page-index">
-        <h1>Welcome to ${name}</h1>
-      </main>
-      <AppFooter />
+export class IndexPage extends Component {
+  static template = xml\`
+    <div class="p-8">
+      <h1 class="text-2xl font-bold">Welcome to ${name}</h1>
+      <p class="mt-4 text-gray-600">Your metaowl app is ready!</p>
     </div>
-  </t>
-</templates>
-`)
-
-// --- src/pages/index/index.css ---
-write('src/pages/index/index.css',
-`.layout {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-}
-
-.page-index {
-  flex: 1;
-  padding: 2rem;
+  \`
 }
 `)
 
-// --- src/components/AppHeader/AppHeader.js ---
-write('src/components/AppHeader/AppHeader.js',
-`import { Component } from '@odoo/owl'
-
-export default class AppHeader extends Component {
-  static template = 'AppHeader'
-}
-`)
-
-// --- src/components/AppHeader/AppHeader.xml ---
-write('src/components/AppHeader/AppHeader.xml',
-`<templates>
-  <t t-name="AppHeader">
-    <header class="app-header">
-      <span class="app-header__logo">${name}</span>
-    </header>
-  </t>
-</templates>
-`)
-
-// --- src/components/AppHeader/AppHeader.css ---
-write('src/components/AppHeader/AppHeader.css',
-`.app-header {
-  display: flex;
-  align-items: center;
-  padding: 0 1.5rem;
-  height: 56px;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.app-header__logo {
-  font-weight: 600;
-  font-size: 1.1rem;
-}
-`)
-
-// --- src/components/AppFooter/AppFooter.js ---
-write('src/components/AppFooter/AppFooter.js',
-`import { Component } from '@odoo/owl'
-
-export default class AppFooter extends Component {
-  static template = 'AppFooter'
-}
-`)
-
-// --- src/components/AppFooter/AppFooter.xml ---
-write('src/components/AppFooter/AppFooter.xml',
-`<templates>
-  <t t-name="AppFooter">
-    <footer class="app-footer">
-      <span>Built with metaowl</span>
-    </footer>
-  </t>
-</templates>
-`)
-
-// --- src/components/AppFooter/AppFooter.css ---
-write('src/components/AppFooter/AppFooter.css',
-`.app-footer {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-  font-size: 0.85rem;
-  color: #6b7280;
-  border-top: 1px solid #e5e7eb;
-}
-`)
-
-// --- Done ---
 console.log()
-success(`Project "${name}" ready`)
+success(`Project "${name}" created`)
 console.log()
-console.log('  Next steps:')
-console.log()
+console.log(`  To get started:`)
 console.log(`    cd ${name}`)
 console.log(`    npm install`)
 console.log(`    npm run dev`)

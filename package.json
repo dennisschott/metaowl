@@ -3,20 +3,41 @@
   "version": "0.1.3",
   "description": "Lightweight meta-framework for Odoo OWL — file-based routing, app mounting, Fetch helper, Cache, Meta tags, SSG generator, and a Vite plugin.",
   "type": "module",
-  "main": "index.js",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./index.js",
-    "./vite": "./vite/plugin.js",
-    "./eslint": "./eslint.js",
-    "./postcss": "./postcss.cjs"
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./vite": {
+      "import": "./dist/vite/plugin.js",
+      "types": "./dist/vite/plugin.d.ts"
+    },
+    "./eslint": {
+      "import": "./dist/eslint.js",
+      "types": "./dist/eslint.d.ts"
+    },
+    "./postcss": {
+      "import": "./dist/postcss.js",
+      "require": "./postcss.cjs",
+      "types": "./dist/postcss.d.ts"
+    }
   },
   "bin": {
-    "metaowl-create": "./bin/metaowl-create.js",
-    "metaowl-dev": "./bin/metaowl-dev.js",
-    "metaowl-build": "./bin/metaowl-build.js",
-    "metaowl-generate": "./bin/metaowl-generate.js",
-    "metaowl-lint": "./bin/metaowl-lint.js"
+    "metaowl-create": "./dist/bin/metaowl-create.js",
+    "metaowl-dev": "./dist/bin/metaowl-dev.js",
+    "metaowl-build": "./dist/bin/metaowl-build.js",
+    "metaowl-generate": "./dist/bin/metaowl-generate.js",
+    "metaowl-lint": "./dist/bin/metaowl-lint.js"
   },
+  "files": [
+    "dist",
+    "config",
+    "postcss.cjs",
+    "README.md",
+    "LICENSE"
+  ],
   "keywords": [
     "owl",
     "odoo",
@@ -49,6 +70,7 @@
     "glob": "^13.0.6",
     "globals": "^13.24.0",
     "prettier": "3.5.1",
+    "typescript": "^5.8.2",
     "vite": "^7.3.1",
     "vite-plugin-handlebars": "^2.0.0",
     "vite-plugin-restart": "^2.0.0",
@@ -58,10 +80,14 @@
     "node": ">=18.0.0"
   },
   "scripts": {
+    "build": "tsc && node scripts/add-shebangs.js",
+    "build:watch": "tsc --watch",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build"
   },
   "devDependencies": {
+    "@types/node": "^22.15.17",
     "jsdom": "^28.1.0",
     "vitest": "^4.0.18"
   }

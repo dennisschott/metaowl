@@ -1,11 +1,11 @@
 // CommonJS PostCSS config factory for metaowl projects.
-// Usage in postcss.config.cjs:
+// This file provides backward compatibility for projects using require().
 //
+// Usage in postcss.config.cjs:
 //   const { createPostcssConfig } = require('metaowl/postcss')
 //   module.exports = createPostcssConfig()
 //
 // Override safelist or add content globs:
-//
 //   module.exports = createPostcssConfig({
 //     safelist: [/^my-custom-class/],
 //     content: ['./templates/**/*.html']

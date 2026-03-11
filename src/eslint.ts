@@ -1,5 +1,6 @@
 import js from '@eslint/js'
 import globals from 'globals'
+import type { Linter } from 'eslint'
 
 /**
  * Default metaowl ESLint configuration.
@@ -17,7 +18,7 @@ import globals from 'globals'
  *     { rules: { 'no-console': 'warn' } }
  *   ]
  */
-export const eslintConfig = [
+export const eslintConfig: Linter.Config[] = [
   js.configs.recommended,
   {
     languageOptions: {
@@ -29,7 +30,7 @@ export const eslintConfig = [
         COMPONENTS: 'readonly'
       }
     },
-    files: ['**/*.js', '**/*.jsx'],
+    files: ['**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx'],
     rules: {
       'no-unused-vars': ['error', {
         argsIgnorePattern: '^_',
