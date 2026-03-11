@@ -72,17 +72,11 @@ npm install metaowl
 
 ## Create a New Project
 
-The fastest way to get started is the `metaowl-create` scaffolder:
-
-```bash
-npx metaowl-create my-app
-```
-
-Or install metaowl globally and run it interactively:
+Install metaowl globally and run it interactively:
 
 ```bash
 npm install -g metaowl
-metaowl-create
+metaowl-create app_name
 ```
 
 This generates a ready-to-run project:
