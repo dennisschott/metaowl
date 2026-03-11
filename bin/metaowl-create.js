@@ -91,10 +91,10 @@ module.exports = createPostcssConfig()
 write('jsconfig.json', JSON.stringify({
   extends: './node_modules/metaowl/config/jsconfig.base.json',
   compilerOptions: {
-    baseUrl: 'src',
+    baseUrl: '.',
     paths: {
-      '@pages/*': ['pages/*'],
-      '@components/*': ['components/*']
+      '@pages/*': ['src/pages/*'],
+      '@components/*': ['src/components/*']
     }
   },
   include: ['src']
@@ -159,8 +159,7 @@ export default class Index extends Component {
 
 // --- src/pages/index/Index.xml ---
 write('src/pages/index/Index.xml',
-`<?xml version="1.0" encoding="UTF-8"?>
-<templates>
+`<templates>
   <t t-name="Index">
     <div class="layout">
       <AppHeader />
@@ -198,8 +197,7 @@ export default class AppHeader extends Component {
 
 // --- src/components/AppHeader/AppHeader.xml ---
 write('src/components/AppHeader/AppHeader.xml',
-`<?xml version="1.0" encoding="UTF-8"?>
-<templates>
+`<templates>
   <t t-name="AppHeader">
     <header class="app-header">
       <span class="app-header__logo">${name}</span>
@@ -235,8 +233,7 @@ export default class AppFooter extends Component {
 
 // --- src/components/AppFooter/AppFooter.xml ---
 write('src/components/AppFooter/AppFooter.xml',
-`<?xml version="1.0" encoding="UTF-8"?>
-<templates>
+`<templates>
   <t t-name="AppFooter">
     <footer class="app-footer">
       <span>Built with metaowl</span>
