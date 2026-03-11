@@ -76,7 +76,7 @@ Install metaowl globally and run it interactively:
 
 ```bash
 npm install -g metaowl
-metaowl-create app_name
+metaowl-create my-app
 ```
 
 This generates a ready-to-run project:
