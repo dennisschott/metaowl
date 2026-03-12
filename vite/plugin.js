@@ -254,12 +254,13 @@ export async function metaowlPlugin(options = {}) {
  * @param {*}      [options.*]       - All other options forwarded to metaowlPlugin().
  * @returns {import('vite').UserConfig}
  */
-export function metaowlConfig(options = {}) {
+export async function metaowlConfig(options = {}) {
   const { server, preview, build, ...metaowlOptions } = options
+  const plugins = await metaowlPlugin(metaowlOptions)
   return {
     server: { port: 3000, strictPort: true, host: true, ...server },
     preview: { port: 4173, strictPort: true, ...preview },
     ...(build ? { build } : {}),
-    plugins: [metaowlPlugin(metaowlOptions)]
+    plugins
   }
 }
