@@ -1,3 +1,8 @@
+/**
+ * @module TemplatesManager
+ *
+ * Template loading and merging utilities for OWL applications.
+ */
 import { loadFile } from '@odoo/owl'
 
 /**

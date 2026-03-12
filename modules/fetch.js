@@ -1,3 +1,10 @@
+/**
+ * @module Fetch
+ *
+ * A static class wrapping the Fetch API with a configurable base URL and
+ * error handling. All internal requests automatically prepend the configured
+ * baseUrl and return parsed JSON.
+ */
 export default class Fetch {
   static _baseUrl = ''
   static _onError = null

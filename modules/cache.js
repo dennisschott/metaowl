@@ -1,4 +1,6 @@
 /**
+ * @module Cache
+ *
  * Async-style localStorage wrapper.
  *
  * Values are automatically JSON-serialised on write and deserialised on read.

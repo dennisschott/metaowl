@@ -1,3 +1,10 @@
+/**
+ * @module AppMounter
+ *
+ * OWL application mounting with template merging.
+ * Handles the low-level mounting of components into the DOM with
+ * merged XML templates from the build process.
+ */
 import { mount } from '@odoo/owl'
 import { mergeTemplates } from './templates-manager.js'
 
