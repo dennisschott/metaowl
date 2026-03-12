@@ -134,7 +134,7 @@ export async function metaowlPlugin(options = {}) {
           'process.env': safeEnv
         }
 
-        cfg.root = cfg.root ?? root
+        cfg.root = cfg.root ?? resolve(process.cwd(), root)
         cfg.publicDir = cfg.publicDir ?? publicDir
         cfg.appType = cfg.appType ?? 'spa'
 
@@ -154,7 +154,7 @@ export async function metaowlPlugin(options = {}) {
           chunkSizeWarningLimit: 1024,
           target: 'esnext',
           rollupOptions: {
-            input: 'index.html',
+            input: resolve(process.cwd(), root, 'index.html'),
             output: {
               manualChunks: {
                 vendor: vendorPackages,
