@@ -11,19 +11,10 @@ import { loadFile } from '@odoo/owl'
  * Returns null if not available (dev mode without inline plugin or legacy setup).
  */
 async function getInlinedTemplates() {
-  // Skip in test environment (Vitest doesn't have the same import.meta behavior)
-  // Also skip if we're not in a browser environment
-  if (typeof window === 'undefined' && typeof globalThis.importMeta === 'undefined') {
-    return null
-  }
-
   try {
     // In production (build), templates are inlined via Vite plugin
-    // Use dynamic import with a path that Vite can resolve at runtime
-    // The templates.js is generated in the output directory
-    // Using eval to prevent Vite's static analysis from failing
-    const templatesModule = await new Function('return import("/templates.js")')()
-    return templatesModule.TEMPLATES
+    const { TEMPLATES } = await import('/src/templates.js')
+    return TEMPLATES
   } catch (e) {
     // In development or legacy setup, templates are loaded at runtime
     return null

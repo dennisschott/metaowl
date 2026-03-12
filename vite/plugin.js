@@ -220,11 +220,10 @@ export async function metaowlPlugin(options = {}) {
         const projectRoot = process.cwd()
 
         // Collect and inline all XML templates into a single JS file
-        // Use already collected XML arrays to avoid duplicate glob operations
         const xmlFiles = [
-          ...layoutXml,
-          ...pageXml,
-          ...componentXml
+          ...globSync(`${root}/${layoutsDir}/**/*.xml`),
+          ...globSync(`${root}/${pagesDir}/**/*.xml`),
+          ...globSync(`${root}/${componentsDir}/**/*.xml`)
         ]
 
         let templates = '<templates>'
@@ -237,22 +236,20 @@ export async function metaowlPlugin(options = {}) {
         }
         templates += '</templates>'
 
-        // Escape for JavaScript string using JSON encoding for safety
-        const escaped = JSON.stringify(templates).slice(1, -1)
+        // Escape for JavaScript string
+        const escaped = templates
+          .replace(/\\/g, '\\\\')
+          .replace(/'/g, "\\'")
+          .replace(/\n/g, '\\n')
+          .replace(/\r/g, '')
 
-        // Write templates.js to the output root (accessible as /templates.js)
+        // Write templates.js
         const templatesJs = `export const TEMPLATES = '${escaped}';\n`
-        const templatesDir = _outDirResolved
+        const templatesDir = resolve(_outDirResolved, root)
         mkdirSync(templatesDir, { recursive: true })
         writeFileSync(resolve(templatesDir, 'templates.js'), templatesJs)
 
         console.log(`[metaowl] Inlined ${xmlFiles.length} XML templates into templates.js`)
-
-        // Restore: Copy assets/images (referenced via absolute URLs in XML)
-        const srcImages = resolve(projectRoot, root, 'assets', 'images')
-        if (existsSync(srcImages)) {
-          cpSync(srcImages, resolve(_outDirResolved, 'assets', 'images'), { recursive: true })
-        }
       }
     }
   ]
