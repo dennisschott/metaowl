@@ -53,7 +53,9 @@ export async function metaowlPlugin(options = {}) {
     pagesDir = 'src/pages',
     restartGlobs = [],
     frameworkEntry = './node_modules/metaowl/index.js',
-    vendorPackages = ['@odoo/owl']
+    vendorPackages = ['@odoo/owl'],
+    autoImport = {},
+    envPrefix
   } = options
 
   const componentXml = collectXml(`${componentsDir}/**/*.xml`)
@@ -119,7 +121,6 @@ export async function metaowlPlugin(options = {}) {
 
         // Expose only NODE_ENV + vars matching the configured prefix.
         // Never expose the full system env to avoid leaking secrets.
-        const { envPrefix } = options
         const safeEnv = Object.fromEntries(
           Object.entries(process.env).filter(([k]) =>
             k === 'NODE_ENV' || (envPrefix && k.startsWith(envPrefix))
