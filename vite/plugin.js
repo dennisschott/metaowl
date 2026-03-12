@@ -38,10 +38,13 @@ function collectXml(globPattern) {
  * @param {string[]} [options.restartGlobs] - Additional globs that trigger dev-server restart.
  * @param {string} [options.frameworkEntry] - Framework entry for manual chunk.
  * @param {string[]} [options.vendorPackages] - npm packages bundled into the vendor chunk.
- * @param {string} [options.envPrefix] - Only expose env vars with this prefix (plus NODE_ENV) via process.env. Defaults to nothing extra (only NODE_ENV).
+ * @param {string} [options.envPrefix] - Only expose env vars with this prefix (plus NODE_ENV) via process.env.
+ * @param {object} [options.autoImport] - Enable component auto-import
+ * @param {boolean} [options.autoImport.enabled=false] - Enable auto-import
+ * @param {string} [options.autoImport.pattern='*.js'] - Glob pattern for components
  * @returns {import('vite').Plugin[]}
  */
-export function metaowlPlugin(options = {}) {
+export async function metaowlPlugin(options = {}) {
   const {
     root = 'src',
     outDir = '../dist',
@@ -67,7 +70,41 @@ export function metaowlPlugin(options = {}) {
 
   let _outDirResolved = null
 
-  return [
+  // Generate auto-import d.ts for components
+  const autoImportDtsPath = path.join(process.cwd(), '.metaowl', 'components.d.ts')
+  let autoImportPlugin = null
+
+  if (autoImport.enabled) {
+    const { generateComponentDts, scanComponents } = await import('../modules/auto-import.js')
+    const components = await scanComponents(componentsDir, { pattern: autoImport.pattern || '*.js' })
+
+    // Ensure .metaowl directory exists
+    const metaowlDir = dirname(autoImportDtsPath)
+    if (!existsSync(metaowlDir)) {
+      mkdirSync(metaowlDir, { recursive: true })
+    }
+
+    await generateComponentDts(components, autoImportDtsPath)
+
+    autoImportPlugin = {
+      name: 'metaowl:auto-import',
+      enforce: 'pre',
+      configResolved() {
+        // Components are scanned at startup
+      },
+      handleHotUpdate({ file }) {
+        // Rescan when component files change
+        if (file.startsWith(resolve(componentsDir)) && file.endsWith('.js')) {
+          scanComponents(componentsDir, { pattern: autoImport.pattern || '*.js' }).then(comps => {
+            generateComponentDts(comps, autoImportDtsPath)
+          })
+        }
+      }
+    }
+  }
+
+  const plugins = [
+    ...(autoImportPlugin ? [autoImportPlugin] : []),
     tsconfigPaths({ root: process.cwd() }),
     ViteRestart({
       restart: [...defaultRestartGlobs, ...restartGlobs]
@@ -214,12 +251,13 @@ export function metaowlPlugin(options = {}) {
  * @param {*}      [options.*]       - All other options forwarded to metaowlPlugin().
  * @returns {import('vite').UserConfig}
  */
-export function metaowlConfig(options = {}) {
+export async function metaowlConfig(options = {}) {
   const { server, preview, build, ...metaowlOptions } = options
+  const plugins = await metaowlPlugin(metaowlOptions)
   return {
     server: { port: 3000, strictPort: true, host: true, ...server },
     preview: { port: 4173, strictPort: true, ...preview },
     ...(build ? { build } : {}),
-    plugins: [...metaowlPlugin(metaowlOptions)]
+    plugins
   }
 }
