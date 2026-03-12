@@ -7,6 +7,7 @@
  */
 import { mount } from '@odoo/owl'
 import { mergeTemplates } from './templates-manager.js'
+import { resolveLayout, getLayout, mountWithLayout } from './layouts.js'
 
 const _defaults = {
   warnIfNoStaticProps: true,
@@ -43,5 +44,18 @@ export async function mountApp(route) {
   const mountElement = document.getElementById('metaowl')
   mountElement.innerHTML = ''
 
-  await mount(route[0].component, mountElement, { ..._config, templates })
+  const pageComponent = route[0].component
+  const pagePath = route[0].path
+
+  // Check for layout
+  const layoutName = resolveLayout(pageComponent, pagePath)
+  const LayoutClass = getLayout(layoutName)
+
+  if (LayoutClass) {
+    // Mount with layout
+    await mountWithLayout(pageComponent, mountElement, { routePath: pagePath, templates })
+  } else {
+    // Mount without layout
+    await mount(pageComponent, mountElement, { ..._config, templates })
+  }
 }

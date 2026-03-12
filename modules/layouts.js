@@ -272,7 +272,7 @@ export function createLayoutWrapper(layoutComponent, pageComponent, props = {}) 
  * @returns {Promise<Component>} Mounted component instance
  */
 export async function mountWithLayout(pageComponent, target, options = {}, config = {}) {
-  const { routePath, props = {} } = options
+  const { routePath, props = {}, templates } = options
 
   const layoutName = resolveLayout(pageComponent, routePath)
   const LayoutClass = getLayout(layoutName)
@@ -280,14 +280,14 @@ export async function mountWithLayout(pageComponent, target, options = {}, confi
   if (!LayoutClass) {
     console.warn(`[metaowl] Layout "${layoutName}" not found, mounting page without layout`)
     const { mount } = await import('@odoo/owl')
-    return mount(pageComponent, target, { ...config, props })
+    return mount(pageComponent, target, { ...config, props, templates })
   }
 
   // Create wrapper that combines layout and page
   const WrapperClass = createLayoutWrapper(LayoutClass, pageComponent, props)
 
   const { mount } = await import('@odoo/owl')
-  const instance = await mount(WrapperClass, target, config)
+  const instance = await mount(WrapperClass, target, { ...config, templates })
 
   _currentLayout = instance
 

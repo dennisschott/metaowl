@@ -187,10 +187,14 @@ export async function metaowlPlugin(options = {}) {
       transform(code, id) {
         if (!id.endsWith('/metaowl.js')) return
         const pagesRel = pagesDir.replace(new RegExp(`^${root}[\\/]`), '')
+        const layoutsRel = layoutsDir.replace(new RegExp(`^${root}[\\/]`), '')
         return {
           code: code.replace(
             /boot\(\s*\)/,
             `boot(import.meta.glob('./${pagesRel}/**/*.js', { eager: true }))`
+          ).replace(
+            /discoverLayouts\(\s*\)/,
+            `discoverLayouts(import.meta.glob('./${layoutsRel}/**/*.js', { eager: true }))`
           ),
           map: null
         }
