@@ -23,6 +23,10 @@ metaowl gives you everything you need to ship production-ready OWL applications 
 - [Layouts](#layouts)
 - [Navigation Guards](#navigation-guards)
 - [State Management](#state-management-store)
+- [Error Boundaries](#error-boundaries)
+- [i18n / Internationalization](#i18n--internationalization)
+- [Form Handling](#form-handling)
+- [Auto-Import](#auto-import)
 - [CLI Reference](#cli-reference)
 - [API Reference](#api-reference)
   - [boot](#bootroutes)
@@ -34,6 +38,9 @@ metaowl gives you everything you need to ship production-ready OWL applications 
   - [Store](#store)
   - [Layouts API](#layouts-api)
   - [Router Guards](#router-guards-api)
+  - [Error Boundary](#error-boundary-api)
+  - [i18n](#i18n-api)
+  - [Forms](#forms-api)
 - [Vite Plugin](#vite-plugin)
   - [metaowlPlugin](#metaowlpluginoptions)
   - [metaowlConfig](#metaowlconfigoptions)
@@ -56,6 +63,10 @@ metaowl gives you everything you need to ship production-ready OWL applications 
 - **Fetch helper** — thin wrapper around the Fetch API with a configurable base URL and error handler
 - **Cache** — async-style `localStorage` wrapper (`get`, `set`, `remove`, `clear`, `keys`)
 - **Meta tags** — programmatic control over `<title>`, Open Graph, Twitter Card, canonical, and more
+- **Error boundaries** — global error handling with context tracking and error pages
+- **i18n** — internationalization with pluralization and interpolation support
+- **Form handling** — schema validation with async support via `useForm()`
+- **Auto-import** — automatic component registration with TypeScript declarations
 - **SSG generator** — statically pre-renders HTML pages with correct meta tags at build time
 - **Vite plugin** — handles `COMPONENTS` injection, XML template copying, CSS auto-import, chunk splitting, and env filtering
 - **ESLint & PostCSS** — shareable configs included; no extra dev-dependencies needed in your project
@@ -430,6 +441,157 @@ Store.use(createPersistencePlugin({
 
 ---
 
+## Error Boundaries
+
+Handle runtime errors gracefully with automatic fallback UI:
+
+```js
+import { ErrorBoundary } from 'metaowl'
+
+// Wrap your app
+const errorBoundary = ErrorBoundary.wrap(AppComponent)
+errorBoundary.mount(document.body)
+
+// Global error handler
+ErrorBoundary.onError((error, context) => {
+  console.error('App error:', error, context)
+  // Send to error tracking service
+  analytics.track('error', { message: error.message, path: context?.route })
+})
+```
+
+**Error Pages:**
+
+```js
+// src/pages/error.js
+export default class ErrorPage extends Component {
+  static template = xml`
+    <div class="error-page">
+      <h1>Error <t t-esc="props.code || 500"/></h1>
+      <p t-esc="props.message"/>
+      <button t-on-click="goHome">Go Home</button>
+    </div>
+  `
+}
+```
+
+---
+
+## i18n / Internationalization
+
+Full-featured translation system with pluralization:
+
+```js
+import { I18n } from 'metaowl'
+
+await I18n.load({
+  locale: 'de',
+  messages: {
+    welcome: 'Willkommen, {name}!',
+    items: '{count, plural, one {# Item} other {# Items}}'
+  }
+})
+```
+
+**In templates:**
+
+```xml
+<div t-esc="I18n.t('welcome', { name: state.username })"/>
+<span t-esc="I18n.t('items', { count: state.cartItems })"/>
+```
+
+**Pluralization:**
+
+```js
+I18n.t('items', { count: 1 })   // "1 Item"
+I18n.t('items', { count: 5 })   // "5 Items"
+```
+
+---
+
+## Form Handling
+
+Declarative forms with validation support:
+
+```js
+import { useForm } from 'metaowl'
+
+class LoginPage extends Component {
+  setup() {
+    this.form = useForm({
+      schema: {
+        email: { required: true, type: 'email' },
+        password: { required: true, minLength: 8 }
+      },
+      onSubmit: async (values) => {
+        await Fetch.post('/api/login', values)
+        this.env.router.navigate('/dashboard')
+      }
+    })
+  }
+}
+```
+
+```xml
+<form t-on-submit.prevent="form.submit">
+  <input t-model="form.values.email" />
+  <span t-if="form.errors.email" t-esc="form.errors.email"/>
+  
+  <input type="password" t-model="form.values.password" />
+  <span t-if="form.errors.password" t-esc="form.errors.password"/>
+  
+  <button type="submit" t-att-disabled="form.isSubmitting">
+    <t t-if="form.isSubmitting">Loading...</t>
+    <t t-else="">Login</t>
+  </button>
+</form>
+```
+
+---
+
+## Auto-Import
+
+Optional automatic component registration for development productivity:
+
+**Enable in vite.config.js:**
+
+```js
+import { metaowlConfig } from 'metaowl/vite'
+
+export default metaowlConfig({
+  autoImport: {
+    enabled: true,
+    pattern: '**/*.js'
+  }
+})
+```
+
+**How it works:**
+
+1. Components in `src/components/` are auto-scanned
+2. Type declarations are generated in `.metaowl/components.d.ts`
+3. Use components without manual imports:
+
+```js
+// No import needed!
+export default class MyPage extends Component {
+  static template = xml`
+    <div>
+      <Button color="primary"/>
+      <Card>
+        <Modal t-if="state.showModal"/>
+      </Card>
+    </div>
+  `
+  // Components are automatically available
+  // from src/components/Button/Button.js, etc.
+}
+```
+
+**Note:** Auto-import is opt-in and primarily useful during development. For production, consider explicit imports for better tree-shaking and clarity.
+
+---
+
 ## CLI Reference
 
 metaowl ships four CLI commands that use its own bundled Vite, Prettier, and ESLint binaries — no need to install them separately in your project.
@@ -689,6 +851,119 @@ router.push('/new-path')
 
 ---
 
+### `Error Boundary API`
+
+| Function | Description |
+|---|---|
+| `ErrorBoundary.wrap(Component)` | Wrap component with error handling |
+| `ErrorBoundary.onError(callback)` | Register global error handler `(error, context) => void` |
+| `ErrorBoundary.getLastError()` | Get most recent error |
+| `ErrorBoundary.clearError()` | Clear error state |
+
+**Error Context:**
+
+```ts
+{
+  route?: string,
+  component?: string,
+  timestamp: number
+}
+```
+
+---
+
+### `i18n API`
+
+**`I18n.load(config)`**
+
+```ts
+I18n.load({
+  locale: string,
+  messages: Record<string, string | MessageFunction>,
+  numberFormats?: Record<string, object>,
+  dateFormats?: Record<string, object>
+})
+```
+
+**`I18n.t(key, values?)`**
+
+Translate a message with optional interpolation:
+
+```ts
+I18n.t('welcome', { name: 'John' })  // "Welcome, John!"
+```
+
+**`I18n.n(value, format?)`** / **`I18n.d(value, format?)`**
+
+Format numbers and dates:
+
+```ts
+I18n.n(1234.5, 'currency')  // "€1,234.50"
+I18n.d(new Date(), 'short') // "12.03.2026"
+```
+
+**Locale Switching:**
+
+```js
+await I18n.setLocale('en')
+console.log(I18n.locale)  // "en"
+```
+
+---
+
+### `Forms API`
+
+**`useForm(options)`**
+
+```ts
+useForm({
+  schema?: ValidationSchema,
+  initialValues?: Record<string, any>,
+  onSubmit?: (values: Record<string, any>) => Promise<void>,
+  validateOnChange?: boolean,
+  validateOnBlur?: boolean
+}): FormInstance
+```
+
+**Form Instance:**
+
+| Property | Type | Description |
+|---|---|---|
+| `values` | `object` | Current form values |
+| `errors` | `object` | Validation errors by field |
+| `touched` | `object` | Fields that have been touched |
+| `isSubmitting` | `boolean` | Submit in progress |
+| `isValid` | `boolean` | All validation passed |
+| `isDirty` | `boolean` | Values differ from initial |
+
+| Method | Description |
+|---|---|
+| `submit(event?)` | Trigger form submission |
+| `setValue(field, value)` | Set a field value |
+| `setValues(values)` | Set multiple values |
+| `setError(field, message)` | Set a field error |
+| `clearErrors()` | Clear all errors |
+| `reset()` | Reset to initial values |
+| `validate()` | Trigger validation |
+
+**Validation Schema:**
+
+```js
+{
+  email: {
+    required: true,
+    type: 'email'
+  },
+  age: {
+    type: 'number',
+    min: 0,
+    max: 120
+  }
+}
+```
+
+---
+
 ## Vite Plugin
 
 ### `metaowlPlugin(options)`
@@ -706,6 +981,14 @@ Returns an array of Vite plugins that configure the full metaowl build pipeline.
 | `frameworkEntry` | `'./node_modules/metaowl/index.js'` | Entry for the `framework` chunk |
 | `restartGlobs` | `[]` | Additional globs that trigger dev-server restart |
 | `envPrefix` | `undefined` | Only expose `process.env` vars with this prefix (plus `NODE_ENV`) |
+| `autoImport` | `{ enabled: false }` | Auto-import configuration: `{ enabled, pattern }` |
+
+**Auto-Import Options:**
+
+| Option | Default | Description |
+|---|---|---|
+| `enabled` | `false` | Enable component auto-import |
+| `pattern` | `'*.js'` | Glob pattern for scanning components |
 
 **What the plugin does:**
 
