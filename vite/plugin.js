@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'node:url'
 import { resolve, dirname } from 'node:path'
-import { mkdirSync, copyFileSync, cpSync, existsSync } from 'node:fs'
+import { mkdirSync, copyFileSync, cpSync, existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { globSync } from 'glob'
 import { config as dotenvConfig } from 'dotenv'
@@ -219,20 +219,37 @@ export async function metaowlPlugin(options = {}) {
       closeBundle() {
         const projectRoot = process.cwd()
 
-        // Copy OWL XML templates (loaded at runtime via fetch — not processed by Vite)
-        const xmlFiles = globSync([`${componentsDir}/**/*.xml`, `${pagesDir}/**/*.xml`, `${layoutsDir}/**/*.xml`])
-        for (const xmlFile of xmlFiles) {
-          const relPath = xmlFile.replace(new RegExp(`^${root}[\\/]`), '')
-          const dest = resolve(_outDirResolved, relPath)
-          mkdirSync(dirname(dest), { recursive: true })
-          copyFileSync(resolve(projectRoot, xmlFile), dest)
-        }
+        // Collect and inline all XML templates into a single JS file
+        const xmlFiles = [
+          ...globSync(`${root}/${layoutsDir}/**/*.xml`),
+          ...globSync(`${root}/${pagesDir}/**/*.xml`),
+          ...globSync(`${root}/${componentsDir}/**/*.xml`)
+        ]
 
-        // Copy assets/images (referenced via absolute URLs in XML — not processed by Vite)
-        const srcImages = resolve(projectRoot, root, 'assets', 'images')
-        if (existsSync(srcImages)) {
-          cpSync(srcImages, resolve(_outDirResolved, 'assets', 'images'), { recursive: true })
+        let templates = '<templates>'
+        for (const file of xmlFiles) {
+          try {
+            templates += readFileSync(file, 'utf-8')
+          } catch (e) {
+            console.warn(`[metaowl] Failed to read template: ${file}`)
+          }
         }
+        templates += '</templates>'
+
+        // Escape for JavaScript string
+        const escaped = templates
+          .replace(/\\/g, '\\\\')
+          .replace(/'/g, "\\'")
+          .replace(/\n/g, '\\n')
+          .replace(/\r/g, '')
+
+        // Write templates.js
+        const templatesJs = `export const TEMPLATES = '${escaped}';\n`
+        const templatesDir = resolve(_outDirResolved, root)
+        mkdirSync(templatesDir, { recursive: true })
+        writeFileSync(resolve(templatesDir, 'templates.js'), templatesJs)
+
+        console.log(`[metaowl] Inlined ${xmlFiles.length} XML templates into templates.js`)
       }
     }
   ]
