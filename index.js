@@ -1,5 +1,6 @@
 import { mountApp } from './modules/app-mounter.js'
-import { buildRoutes, processRoutes } from './modules/file-router.js'
+import { buildRoutes } from './modules/file-router.js'
+import { processRoutes } from './modules/router.js'
 
 export { default as Fetch } from './modules/fetch.js'
 export { default as Cache } from './modules/cache.js'
