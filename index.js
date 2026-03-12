@@ -1,6 +1,7 @@
 import { mountApp } from './modules/app-mounter.js'
 import { buildRoutes } from './modules/file-router.js'
 import { processRoutes } from './modules/router.js'
+import { discoverLayouts } from './modules/layouts.js'
 
 export { default as Fetch } from './modules/fetch.js'
 export { default as Cache } from './modules/cache.js'
@@ -170,7 +171,21 @@ export {
  *
  * @param {Record<string, object>|object[]} [routesOrModules]
  */
-export async function boot(routesOrModules = {}) {
+export async function boot(routesOrModules = {}, layoutsOrModules = null) {
+  // Auto-discover layouts
+  try {
+    if (layoutsOrModules) {
+      // Use layouts provided by Vite plugin transformation
+      const { buildLayouts, setDefaultLayout } = await import('./modules/layouts.js')
+      buildLayouts(layoutsOrModules)
+      setDefaultLayout('default')
+    } else {
+      await discoverLayouts()
+    }
+  } catch (e) {
+    console.warn('[metaowl] Could not auto-discover layouts:', e.message)
+  }
+
   const routes = Array.isArray(routesOrModules)
     ? routesOrModules
     : buildRoutes(routesOrModules)

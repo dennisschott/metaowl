@@ -191,10 +191,7 @@ export async function metaowlPlugin(options = {}) {
         return {
           code: code.replace(
             /boot\(\s*\)/,
-            `boot(import.meta.glob('./${pagesRel}/**/*.js', { eager: true }))`
-          ).replace(
-            /discoverLayouts\(\s*\)/,
-            `discoverLayouts(import.meta.glob('./${layoutsRel}/**/*.js', { eager: true }))`
+            `boot(import.meta.glob('./${pagesRel}/**/*.js', { eager: true }), import.meta.glob('./${layoutsRel}/**/*.js', { eager: true }))`
           ),
           map: null
         }
