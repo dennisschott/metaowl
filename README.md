@@ -1,13 +1,25 @@
 # metaowl
 
-> A lightweight meta-framework for [Odoo OWL](https://github.com/odoo/owl), built on top of [Vite](https://vitejs.dev).
+> A comprehensive meta-framework for [Odoo OWL](https://github.com/odoo/owl), built on top of [Vite](https://vitejs.dev).
 
 [![npm version](https://img.shields.io/npm/v/metaowl.svg)](https://www.npmjs.com/package/metaowl)
 [![License: LGPL v3](https://img.shields.io/badge/License-LGPL_v3-blue.svg)](LICENSE)
 [![Node.js >=18](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](https://nodejs.org)
 [![GitHub Issues](https://img.shields.io/github/issues/dennisschott/metaowl.svg)](https://github.com/dennisschott/metaowl/issues)
 
-metaowl gives you everything you need to ship production-ready OWL applications — file-based routing, app mounting, a fetch helper, `localStorage` cache, meta tag management, an SSG generator, and a batteries-included Vite plugin — so you can focus on building components instead of wiring infrastructure.
+metaowl is a complete solution for building production-ready OWL applications with everything you need out of the box:
+
+**Core Infrastructure:** File-based routing with dynamic routes, layout system, navigation guards, Pinia-inspired state management, and zero-config app mounting.
+
+**Odoo Integration:** Full JSON-RPC client with authentication, session management, and CRUD operations.
+
+**Developer Experience:** Composables for common patterns (auth, localStorage, fetching), form handling with validation, error boundaries, and internationalization.
+
+**SEO & PWA:** Sitemap/robots.txt generation, structured data support, service worker integration, web app manifest, and push notifications.
+
+**Testing & Quality:** Mock stores, router mocking, component testing utilities, plus bundled ESLint and PostCSS configs.
+
+All powered by a batteries-included Vite plugin that handles the build pipeline, so you can focus on building components instead of wiring infrastructure.
 
 ---
 
@@ -73,6 +85,9 @@ metaowl gives you everything you need to ship production-ready OWL applications 
 - **Auto-import** — automatic component registration with TypeScript declarations
 - **Odoo RPC Service** — full JSON-RPC client with authentication and CRUD operations
 - **Composables** — reusable hooks for auth, localStorage, fetching, and more
+- **Testing Utilities** — mock store, router mocking, component mount helpers
+- **SEO Utils** — sitemap, robots.txt, JSON-LD, Open Graph, Twitter Cards
+- **PWA Support** — service worker, manifest generation, push notifications
 - **SSG generator** — statically pre-renders HTML pages with correct meta tags at build time
 - **Vite plugin** — handles `COMPONENTS` injection, XML template copying, CSS auto-import, chunk splitting, and env filtering
 - **ESLint & PostCSS** — shareable configs included; no extra dev-dependencies needed in your project
