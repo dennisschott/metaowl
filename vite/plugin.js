@@ -238,12 +238,14 @@ export async function metaowlPlugin(options = {}) {
  * Usage in vite.config.js:
  *
  *   import { metaowlConfig } from 'metaowl/vite'
- *   export default metaowlConfig({
- *     server: { port: 3333 },
- *     preview: { port: 8095 },
- *     envPrefix: 'MY_',
- *     vendorPackages: ['@odoo/owl', 'apexcharts']
- *   })
+ *   export default async () => {
+ *     return metaowlConfig({
+ *       server: { port: 3333 },
+ *       preview: { port: 8095 },
+ *       envPrefix: 'MY_',
+ *       vendorPackages: ['@odoo/owl', 'apexcharts']
+ *     })
+ *   }
  *
  * @param {object} [options]
  * @param {object} [options.server]  - Vite server config overrides (merged with defaults).
@@ -252,13 +254,12 @@ export async function metaowlPlugin(options = {}) {
  * @param {*}      [options.*]       - All other options forwarded to metaowlPlugin().
  * @returns {import('vite').UserConfig}
  */
-export async function metaowlConfig(options = {}) {
+export function metaowlConfig(options = {}) {
   const { server, preview, build, ...metaowlOptions } = options
-  const plugins = await metaowlPlugin(metaowlOptions)
   return {
     server: { port: 3000, strictPort: true, host: true, ...server },
     preview: { port: 4173, strictPort: true, ...preview },
     ...(build ? { build } : {}),
-    plugins
+    plugins: [metaowlPlugin(metaowlOptions)]
   }
 }

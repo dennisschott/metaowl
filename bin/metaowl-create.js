@@ -67,10 +67,12 @@ write('package.json', JSON.stringify({
 write('vite.config.js',
 `import { metaowlConfig } from 'metaowl/vite'
 
-export default metaowlConfig({
-  componentsDir: 'src/components',
-  pagesDir: 'src/pages'
-})
+export default async () => {
+  return metaowlConfig({
+    componentsDir: 'src/components',
+    pagesDir: 'src/pages'
+  })
+}
 `)
 
 // --- eslint.config.js ---
