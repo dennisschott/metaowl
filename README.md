@@ -19,6 +19,10 @@ metaowl gives you everything you need to ship production-ready OWL applications 
 - [Create a New Project](#create-a-new-project)
 - [Manual Setup](#manual-setup)
 - [File-based Routing](#file-based-routing)
+  - [Dynamic Routes](#dynamic-routes)
+- [Layouts](#layouts)
+- [Navigation Guards](#navigation-guards)
+- [State Management](#state-management-store)
 - [CLI Reference](#cli-reference)
 - [API Reference](#api-reference)
   - [boot](#bootroutes)
@@ -27,6 +31,9 @@ metaowl gives you everything you need to ship production-ready OWL applications 
   - [Meta](#meta)
   - [configureOwl](#configureowlconfig)
   - [buildRoutes](#buildroutesmodules)
+  - [Store](#store)
+  - [Layouts API](#layouts-api)
+  - [Router Guards](#router-guards-api)
 - [Vite Plugin](#vite-plugin)
   - [metaowlPlugin](#metaowlpluginoptions)
   - [metaowlConfig](#metaowlconfigoptions)
@@ -41,6 +48,10 @@ metaowl gives you everything you need to ship production-ready OWL applications 
 ## Features
 
 - **File-based routing** — mirrors Nuxt/Next.js conventions out of the box
+- **Dynamic routes** — support for parameters `[id]`, optional params `[id]?`, and catch-all `[...path]`
+- **Layouts** — share page structures across routes with automatic layout resolution
+- **Navigation guards** — route middleware for authentication, authorization, and redirects
+- **State management** — Pinia-like store system with mutations, actions, and getters
 - **App mounting** — zero-config OWL component mounting with template merging
 - **Fetch helper** — thin wrapper around the Fetch API with a configurable base URL and error handler
 - **Cache** — async-style `localStorage` wrapper (`get`, `set`, `remove`, `clear`, `keys`)
@@ -213,6 +224,212 @@ SSG path variants (`.html`, trailing slash, `index.html`) are added automaticall
 
 ---
 
+### Dynamic Routes
+
+File-based routing supports dynamic segments using bracket notation. The router supports required parameters, optional parameters, and catch-all routes.
+
+| File | URL Pattern | Example URL | Params |
+|---|---|---|---|
+| `pages/user/[id]/User.js` | `/user/:id` | `/user/123` | `{ id: '123' }` |
+| `pages/product/[category]/[slug]/Product.js` | `/product/:category/:slug` | `/product/tech/hello` | `{ category: 'tech', slug: 'hello' }` |
+| `pages/blog/[id]/[slug?]/Blog.js` | `/blog/:id/:slug?` | `/blog/123` or `/blog/123/my-post` | `{ id: '123' }` or `{ id: '123', slug: 'my-post' }` |
+| `pages/docs/[...path]/Docs.js` | `/docs/:path(.*)` | `/docs/api/routing` | `{ path: 'api/routing' }` |
+| `pages/[...404]/NotFound.js` | `/:path(.*)` | `/any/unknown/path` | `{ path: 'any/unknown/path' }` |
+
+**Param Types:**
+
+- `[param]` — Required parameter, must be present in URL
+- `[param?]` — Optional parameter, may be omitted
+- `[...param]` — Catch-all parameter, matches any number of segments
+
+Access parameters in your component:
+
+```js
+import { Component, xml } from '@odoo/owl'
+
+export class UserPage extends Component {
+  static template = xml`
+    <div>
+      <h1>User Profile</h1>
+      <p>ID: <t t-esc="props.params.id"/></p>
+    </div>
+  `
+  
+  static props = ['params']
+}
+```
+
+---
+
+## Layouts
+
+Layouts provide shared page structures. Create a `layouts/` directory alongside your `pages/`:
+
+```
+src/
+  layouts/
+    default/
+      DefaultLayout.js
+      DefaultLayout.xml
+    admin/
+      AdminLayout.js
+      AdminLayout.xml
+  pages/
+    index/
+      Index.js  → uses 'default' layout
+    admin/
+      dashboard/
+        Dashboard.js  → can use 'admin' layout
+```
+
+Use a layout by setting the static `layout` property:
+
+```js
+export class DashboardPage extends Component {
+  static template = 'DashboardPage'
+  static layout = 'admin'
+}
+```
+
+If no layout is specified, the `default` layout is used automatically.
+
+**Layout Template Convention:**
+
+```xml
+<templates>
+  <t t-name="DefaultLayout">
+    <div class="layout-default">
+      <header>The Header</header>
+      <main>
+        <t t-slot="default"/>
+      </main>
+      <footer>The Footer</footer>
+    </div>
+  </t>
+</templates>
+```
+
+---
+
+## Navigation Guards
+
+Navigation guards intercept route navigation and can:
+- Block access to routes
+- Redirect to other routes
+- Perform async checks (authentication, permissions)
+
+### Global Guards
+
+```js
+import { beforeEach, afterEach } from 'metaowl'
+
+// Run before navigation
+beforeEach((to, from, next) => {
+  const auth = useAuthStore()
+  
+  if (to.meta.requiresAuth && !auth.state.loggedIn) {
+    next('/login')  // redirect
+  } else {
+    next()  // proceed
+  }
+})
+
+// Run after navigation
+afterEach((to, from) => {
+  console.log(`Navigated to ${to.path}`)
+})
+```
+
+### Per-Route Guards
+
+```js
+export class AdminPage extends Component {
+  static route = {
+    path: '/admin',
+    meta: { requiresAuth: true, role: 'admin' },
+    beforeEnter: (to, from, next) => {
+      // Check specific permissions
+      if (!hasAdminRole()) {
+        next('/unauthorized')
+      } else {
+        next()
+      }
+    }
+  }
+}
+```
+
+**Guard Behavior:**
+
+- `next()` — proceed to next guard
+- `next(false)` — abort navigation
+- `next('/path')` — redirect to path
+- `next(error)` — abort with error
+
+---
+
+## State Management (Store)
+
+A Pinia-inspired store system with mutations, actions, and getters.
+
+```js
+import { Store } from 'metaowl'
+
+const useUserStore = Store.define('user', {
+  state: () => ({
+    name: '',
+    loggedIn: false
+  }),
+  
+  getters: {
+    displayName: (state) => state.name || 'Guest'
+  },
+  
+  mutations: {
+    setName: (state, name) => { state.name = name },
+    setLoggedIn: (state, value) => { state.loggedIn = value }
+  },
+  
+  actions: {
+    async login({ commit }, credentials) {
+      const result = await Fetch.url('/api/login', 'POST', credentials)
+      commit('setName', result.name)
+      commit('setLoggedIn', true)
+      return result
+    },
+    
+    logout({ commit }) {
+      commit('setName', '')
+      commit('setLoggedIn', false)
+    }
+  }
+})
+```
+
+**In a component:**
+
+```js
+const store = useUserStore()
+
+store.commit('setName', 'John')  // synchronous mutation
+await store.dispatch('login', { email, password })  // async action
+console.log(store.getters.displayName.value)  // computed getter
+```
+
+**Persistence:**
+
+```js
+import { Store, createPersistencePlugin } from 'metaowl'
+
+// Automatically persist state to localStorage
+Store.use(createPersistencePlugin({
+  storage: localStorage,
+  paths: ['user', 'preferences']  // only persist specific paths
+}))
+```
+
+---
+
 ## CLI Reference
 
 metaowl ships four CLI commands that use its own bundled Vite, Prettier, and ESLint binaries — no need to install them separately in your project.
@@ -382,6 +599,92 @@ Converts an `import.meta.glob` result into a metaowl route table. Called automat
 
 ```ts
 buildRoutes(modules: Record<string, object>): RouteDefinition[]
+```
+
+---
+
+### `Store`
+
+Pinia-inspired state management system with mutations, actions, and getters.
+
+#### `Store.define(id, config)`
+
+Creates a store factory function.
+
+```ts
+const useStore = Store.define('storeId', {
+  state: () => ({ count: 0 }),
+  getters: { double: (state) => state.count * 2 },
+  mutations: { increment: (state) => state.count++ },
+  actions: { async fetchData({ commit }) { ... } }
+})
+```
+
+#### Store Instance Methods
+
+| Method | Description |
+|---|---|
+| `commit(mutation, payload)` | Execute synchronous mutation |
+| `dispatch(action, payload)` | Execute async action |
+| `subscribe(callback)` | Listen to mutations `(mutation, state, prevState) => void` |
+| `subscribeAction(callback)` | Listen to actions `(action, status, result) => void` |
+| `reset()` | Reset state to initial values |
+
+#### `Store.use(plugin)`
+
+Register a global plugin applied to all stores.
+
+```ts
+import { Store, createPersistencePlugin } from 'metaowl'
+
+Store.use(createPersistencePlugin({ storage: localStorage }))
+```
+
+---
+
+### `Layouts API`
+
+Functions for layout management.
+
+| Function | Description |
+|---|---|
+| `registerLayout(name, Component)` | Register a layout |
+| `getLayout(name)` | Get layout component by name |
+| `setDefaultLayout(name)` | Set default layout |
+| `resolveLayout(Component, path?)` | Resolve layout for component |
+| `subscribeToLayouts(callback)` | Listen to layout events |
+
+**Component Layout Property:**
+
+```js
+export class MyPage extends Component {
+  static layout = 'admin'  // Use 'admin' layout
+}
+```
+
+---
+
+### `Router Guards API`
+
+Functions for navigation control.
+
+| Function | Description |
+|---|---|
+| `beforeEach(guard)` | Register global guard (returns unsubscribe) |
+| `afterEach(hook)` | Register global after hook (returns unsubscribe) |
+| `getCurrentRoute()` | Get current route object |
+| `getPreviousRoute()` | Get previous route object |
+| `push(path)` | Navigate to path |
+| `replace(path)` | Replace current history entry |
+| `back()` / `forward()` / `go(n)` | History navigation |
+
+**Router Singleton:**
+
+```js
+import { router } from 'metaowl'
+
+router.beforeEach((to, from, next) => { ... })
+router.push('/new-path')
 ```
 
 ---
