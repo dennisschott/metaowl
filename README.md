@@ -63,6 +63,7 @@ All powered by a batteries-included Vite plugin that handles the build pipeline,
 - [ESLint Config](#eslint-config)
 - [PostCSS Config](#postcss-config)
 - [TypeScript / jsconfig](#typescript--jsconfig)
+- [Deployment](#deployment)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -1366,6 +1367,69 @@ Extend from the included base configs to get sensible defaults:
   },
   "include": ["src"]
 }
+```
+
+---
+
+## Deployment
+
+MetaOWL provides two ways to build your application for production:
+
+### Option 1: `npm run generate` (Recommended)
+
+```bash
+npm run generate
+```
+
+This command generates static HTML files for all routes. The result works **without any server configuration** on all web hosts:
+
+- GitHub Pages
+- Vercel
+- Netlify
+- Cloudflare Pages
+- Any traditional web host
+
+All pages are generated as separate HTML files at build time, so every route can be accessed directly.
+
+### Option 2: `npm run build`
+
+```bash
+npm run build
+```
+
+This command creates a Single Page Application (SPA). Since all routes are handled client-side, the web server must **forward all requests to `index.html`** (SPA fallback).
+
+#### Web Server Configuration by Host:
+
+**Vercel, Netlify, Cloudflare Pages:**
+Create a `public/serve.json` file before building:
+
+```json
+{
+  "rewrites": [
+    { "source": "**", "destination": "/index.html" }
+  ]
+}
+```
+
+**Apache (.htaccess):**
+```apache
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ /index.html [L]
+```
+
+**nginx:**
+```nginx
+location / {
+  try_files $uri $uri/ /index.html;
+}
+```
+
+**Node.js (with serve):**
+```bash
+npx serve -s dist
 ```
 
 ---
