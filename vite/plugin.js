@@ -35,6 +35,7 @@ function collectXml(globPattern) {
  * @param {string} [options.publicDir='../public'] - Public assets directory.
  * @param {string} [options.componentsDir='src/components'] - OWL components directory.
  * @param {string} [options.pagesDir='src/pages'] - OWL pages directory.
+ * @param {string} [options.layoutsDir='src/layouts'] - OWL layouts directory.
  * @param {string[]} [options.restartGlobs] - Additional globs that trigger dev-server restart.
  * @param {string} [options.frameworkEntry] - Framework entry for manual chunk.
  * @param {string[]} [options.vendorPackages] - npm packages bundled into the vendor chunk.
@@ -51,6 +52,7 @@ export async function metaowlPlugin(options = {}) {
     publicDir = '../public',
     componentsDir = 'src/components',
     pagesDir = 'src/pages',
+    layoutsDir = 'src/layouts',
     restartGlobs = [],
     frameworkEntry = './node_modules/metaowl/index.js',
     vendorPackages = ['@odoo/owl'],
@@ -60,7 +62,8 @@ export async function metaowlPlugin(options = {}) {
 
   const componentXml = collectXml(`${componentsDir}/**/*.xml`)
   const pageXml = collectXml(`${pagesDir}/**/*.xml`)
-  const allComponents = [...pageXml, ...componentXml]
+  const layoutXml = collectXml(`${layoutsDir}/**/*.xml`)
+  const allComponents = [...pageXml, ...componentXml, ...layoutXml]
 
   const defaultRestartGlobs = [
     `${root}/**/*.[jt]s`,
@@ -169,7 +172,8 @@ export async function metaowlPlugin(options = {}) {
           include: ['@odoo/owl'],
           entries: [
             `${componentsDir}/**/*.[jt]s`,
-            `${pagesDir}/**/*.[jt]s`
+            `${pagesDir}/**/*.[jt]s`,
+            `${layoutsDir}/**/*.[jt]s`
           ],
           ...(cfg.optimizeDeps ?? {})
         }
@@ -198,10 +202,12 @@ export async function metaowlPlugin(options = {}) {
         if (!id.endsWith('/css.js')) return
         const compRel = componentsDir.replace(new RegExp(`^${root}[\\/]`), '')
         const pagesRel = pagesDir.replace(new RegExp(`^${root}[\\/]`), '')
+        const layoutsRel = layoutsDir.replace(new RegExp(`^${root}[\\/]`), '')
         return {
           code: code + '\n' +
             `import.meta.glob('/${compRel}/**/*.{css,scss}', { eager: true })\n` +
-            `import.meta.glob('/${pagesRel}/**/*.{css,scss}', { eager: true })\n`,
+            `import.meta.glob('/${pagesRel}/**/*.{css,scss}', { eager: true })\n` +
+            `import.meta.glob('/${layoutsRel}/**/*.{css,scss}', { eager: true })\n`,
           map: null
         }
       }
@@ -213,7 +219,7 @@ export async function metaowlPlugin(options = {}) {
         const projectRoot = process.cwd()
 
         // Copy OWL XML templates (loaded at runtime via fetch — not processed by Vite)
-        const xmlFiles = globSync([`${componentsDir}/**/*.xml`, `${pagesDir}/**/*.xml`])
+        const xmlFiles = globSync([`${componentsDir}/**/*.xml`, `${pagesDir}/**/*.xml`, `${layoutsDir}/**/*.xml`])
         for (const xmlFile of xmlFiles) {
           const relPath = xmlFile.replace(new RegExp(`^${root}[\\/]`), '')
           const dest = resolve(_outDirResolved, relPath)

@@ -397,6 +397,39 @@ router.beforeEach((to, from, next) => {
 - File: pages/blog/[slug]/Blog.js → URL: /blog/:slug
 - File: pages/[...path]/NotFound.js → URL: /:path(.*)
 
+### Layouts
+Share page structures across routes with automatic layout resolution:
+
+\`\`\`javascript
+// pages/admin/Dashboard.js
+export class DashboardPage extends Component {
+  static template = 'DashboardPage'
+  static layout = 'admin'  // Use admin layout
+}
+\`\`\`
+
+Layout Directory:
+\`\`\`
+src/
+├── layouts/
+│   ├── default/
+│   │   ├── DefaultLayout.js
+│   │   └── DefaultLayout.xml
+│   └── admin/
+│       ├── AdminLayout.js
+│       └── AdminLayout.xml
+\`\`\`
+
+Layout Template uses \`<t t-slot=\"default\"/>\` to render page content:
+\`\`\`xml
+<t t-name="AdminLayout">
+  <div class="layout-admin">
+    <aside>Sidebar</aside>
+    <main><t t-slot="default"/></main>
+  </div>
+</t>
+\`\`\`
+
 ### API Requests
 \`\`\`javascript
 import { Fetch } from 'metaowl'
@@ -520,6 +553,24 @@ router.beforeEach((to, from, next) => next())
 router.push('/path')
 router.back()
 \`\`\`
+
+### Layouts
+Shared page structures with automatic resolution.
+\`\`\`javascript
+// In page component
+export class DashboardPage extends Component {
+  static template = 'DashboardPage'
+  static layout = 'admin'  // Use admin layout
+}
+\`\`\`
+
+// Layout component uses t-slot for page content:
+// <t t-slot="default"/>
+
+Layout functions:
+- registerLayout(name, Component) - Register a layout
+- resolveLayout(Component, path?) - Get layout for component
+- setRouteLayout(path, name) - Assign layout to route
 
 ## Component Template
 \`\`\`javascript
