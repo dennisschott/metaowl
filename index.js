@@ -55,6 +55,42 @@ export {
   defineRoute,
   route
 } from './modules/file-router.js'
+export {
+  onError,
+  setErrorContext,
+  getErrorContext,
+  clearErrorContext,
+  captureError,
+  initGlobalErrorHandling,
+  errorBoundary
+} from './modules/error-boundary.js'
+export {
+  configureI18n,
+  t,
+  getLocale,
+  setLocale,
+  i18n,
+  loadLocaleMessages,
+  formatDate,
+  formatNumber,
+  formatCurrency,
+  formatRelativeTime,
+  createNamespacedT
+} from './modules/i18n.js'
+export {
+  useForm,
+  validators,
+  createSchema,
+  fieldProps
+} from './modules/forms.js'
+export {
+  generateComponentMap,
+  generateImports,
+  generateComponentsObject,
+  createAutoImportPlugin,
+  scanComponents,
+  generateComponentDts
+} from './modules/auto-import.js'
 
 /**
  * Boots the metaowl application.
