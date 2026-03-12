@@ -71,7 +71,7 @@ export async function metaowlPlugin(options = {}) {
   let _outDirResolved = null
 
   // Generate auto-import d.ts for components
-  const autoImportDtsPath = path.join(process.cwd(), '.metaowl', 'components.d.ts')
+  const autoImportDtsPath = resolve(process.cwd(), '.metaowl', 'components.d.ts')
   let autoImportPlugin = null
 
   if (autoImport.enabled) {
