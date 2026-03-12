@@ -91,6 +91,36 @@ export {
   scanComponents,
   generateComponentDts
 } from './modules/auto-import.js'
+export {
+  OdooService,
+  configure,
+  authenticate,
+  logout,
+  searchRead,
+  call,
+  read,
+  create,
+  write,
+  unlink,
+  searchCount,
+  listDatabases,
+  versionInfo,
+  isAuthenticated,
+  getSession,
+  onAuthChange
+} from './modules/odoo-rpc.js'
+export {
+  useAuth,
+  useLocalStorage,
+  useFetch,
+  useDebounce,
+  useThrottle,
+  useWindowSize,
+  useOnlineStatus,
+  useAsyncState,
+  useCache,
+  Composables
+} from './modules/composables.js'
 
 /**
  * Boots the metaowl application.

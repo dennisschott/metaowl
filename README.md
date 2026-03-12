@@ -27,6 +27,8 @@ metaowl gives you everything you need to ship production-ready OWL applications 
 - [i18n / Internationalization](#i18n--internationalization)
 - [Form Handling](#form-handling)
 - [Auto-Import](#auto-import)
+- [Odoo JSON-RPC Service](#odoo-json-rpc-service)
+- [Composables / Hooks](#composables--hooks)
 - [CLI Reference](#cli-reference)
 - [API Reference](#api-reference)
   - [boot](#bootroutes)
@@ -41,6 +43,8 @@ metaowl gives you everything you need to ship production-ready OWL applications 
   - [Error Boundary](#error-boundary-api)
   - [i18n](#i18n-api)
   - [Forms](#forms-api)
+  - [OdooService](#odooservice-api)
+  - [Composables](#composables-api)
 - [Vite Plugin](#vite-plugin)
   - [metaowlPlugin](#metaowlpluginoptions)
   - [metaowlConfig](#metaowlconfigoptions)
@@ -67,6 +71,8 @@ metaowl gives you everything you need to ship production-ready OWL applications 
 - **i18n** — internationalization with pluralization and interpolation support
 - **Form handling** — schema validation with async support via `useForm()`
 - **Auto-import** — automatic component registration with TypeScript declarations
+- **Odoo RPC Service** — full JSON-RPC client with authentication and CRUD operations
+- **Composables** — reusable hooks for auth, localStorage, fetching, and more
 - **SSG generator** — statically pre-renders HTML pages with correct meta tags at build time
 - **Vite plugin** — handles `COMPONENTS` injection, XML template copying, CSS auto-import, chunk splitting, and env filtering
 - **ESLint & PostCSS** — shareable configs included; no extra dev-dependencies needed in your project
@@ -592,6 +598,113 @@ export default class MyPage extends Component {
 
 ---
 
+## Odoo JSON-RPC Service
+
+Connect to Odoo backends with a full-featured JSON-RPC client:
+
+```js
+import { OdooService } from 'metaowl'
+
+// Configure connection
+OdooService.configure({
+  baseUrl: 'https://my-odoo-instance.com',
+  database: 'my_database',
+  username: 'admin',
+  password: 'admin'  // or apiKey
+})
+
+// Authenticate
+const session = await OdooService.authenticate()
+console.log(`Logged in as ${session.name}`)
+
+// Search and read records
+const partners = await OdooService.searchRead('res.partner', {
+  domain: [['is_company', '=', true]],
+  fields: ['name', 'email', 'phone'],
+  limit: 10
+})
+
+// Call any model method
+await OdooService.call('res.partner', 'create', [{
+  name: 'New Partner',
+  email: 'partner@example.com'
+}])
+```
+
+**CRUD Operations:**
+
+```js
+// Create
+const id = await OdooService.create('res.partner', { name: 'Test' })
+
+// Read
+const records = await OdooService.read('res.partner', [id], ['name'])
+
+// Update
+await OdooService.write('res.partner', [id], { name: 'Updated' })
+
+// Delete
+await OdooService.unlink('res.partner', [id])
+```
+
+**Session Management:**
+
+```js
+// Check authentication
+if (OdooService.isAuthenticated()) {
+  console.log('User:', OdooService.getSession().name)
+}
+
+// Logout
+OdooService.logout()
+
+// Listen to auth changes
+OdooService.onAuthChange((session) => {
+  console.log(session ? 'Logged in' : 'Logged out')
+})
+```
+
+---
+
+## Composables / Hooks
+
+Reusable OWL hooks for common patterns:
+
+```js
+import { useAuth, useLocalStorage, useFetch } from 'metaowl'
+
+class MyComponent extends Component {
+  setup() {
+    // Authentication state
+    const { user, isLoggedIn, logout } = useAuth()
+
+    // Persisted state
+    const theme = useLocalStorage('theme', 'light')
+
+    // Data fetching
+    const { data, loading, error, refresh } = useFetch('/api/users')
+
+    return { user, theme, data, loading, error, refresh }
+  }
+}
+```
+
+**Available Composables:**
+
+| Composable | Description |
+|---|---|
+| `useAuth()` | Authentication state linked to OdooService |
+| `useLocalStorage(key, default)` | Reactive localStorage access |
+| `useFetch(url, options)` | Data fetching with loading/error states |
+| `useDebounce(value, wait)` | Debounced reactive value |
+| `useThrottle(fn, wait)` | Throttled function |
+| `useWindowSize()` | Reactive window dimensions |
+| `useOnlineStatus()` | Network connectivity state |
+| `useAsyncState(fn)` | Async operation state management |
+| `useCache(key, default)` | Reactive cache access |
+
+---
+
 ## CLI Reference
 
 metaowl ships four CLI commands that use its own bundled Vite, Prettier, and ESLint binaries — no need to install them separately in your project.
@@ -960,6 +1073,141 @@ useForm({
     max: 120
   }
 }
+```
+
+---
+
+### `OdooService API`
+
+| Method | Description |
+|---|---|
+| `configure(config)` | Configure Odoo connection (baseUrl, database, credentials) |
+| `authenticate()` | Login and get session |
+| `logout()` | Clear session |
+| `isAuthenticated()` | Check if currently logged in |
+| `getSession()` | Get current session info |
+| `onAuthChange(callback)` | Subscribe to auth state changes (returns unsubscribe) |
+
+**CRUD Operations:**
+
+| Method | Description |
+|---|---|
+| `searchRead(model, options)` | Search and read records |
+| `call(model, method, args, kwargs)` | Call any model method |
+| `read(model, ids, fields)` | Read specific records |
+| `create(model, values)` | Create new record |
+| `write(model, ids, values)` | Update records |
+| `unlink(model, ids)` | Delete records |
+| `searchCount(model, domain)` | Get count of matching records |
+
+**Utility Methods:**
+
+| Method | Description |
+|---|---|
+| `listDatabases()` | Get available databases |
+| `versionInfo()` | Get Odoo server version info |
+
+**Configuration Options:**
+
+```ts
+{
+  baseUrl: string,        // Odoo instance URL
+  database: string,       // Database name
+  username?: string,      // Username (or use in authenticate())
+  password?: string,      // Password (or apiKey)
+  apiKey?: string,        // API Key alternative to password
+  persistSession?: boolean // Persist to localStorage (default: true)
+}
+```
+
+---
+
+### `Composables API`
+
+**`useAuth()`**
+
+Authentication state for Odoo integration.
+
+```ts
+{
+  user: Ref<Session|null>,      // Current user info
+  isLoggedIn: Ref<boolean>,     // Auth status
+  isLoading: Ref<boolean>,      // Loading state
+  login: (credentials) => Promise<boolean>,
+  logout: () => Promise<void>,
+  checkAuth: () => Promise<boolean>
+}
+```
+
+**`useLocalStorage(key, defaultValue)`**
+
+Reactive localStorage access with cross-tab sync.
+
+```ts
+const theme = useLocalStorage('theme', 'light')
+
+theme.value = 'dark'  // Automatically saves to localStorage
+// Other tabs are notified via storage event
+```
+
+**`useFetch(url, options)`**
+
+Data fetching with reactive states.
+
+```ts
+{
+  data: Ref<any>,       // Fetched data
+  loading: Ref<boolean>,
+  error: Ref<Error|null>,
+  refresh: () => Promise<void>,
+  execute: (url?) => Promise<void>
+}
+```
+
+Options: `initialData`, `immediate`, `transform`, `onError`
+
+**`useDebounce(value, wait)`**
+
+```ts
+const searchQuery = useState('')
+const debounced = useDebounce(searchQuery, 500)
+// debounced updates 500ms after searchQuery stops changing
+```
+
+**`useThrottle(fn, wait)`**
+
+```ts
+const throttledSearch = useThrottle((query) => {
+  performSearch(query)
+}, 500)
+```
+
+**`useWindowSize()`**
+
+```ts
+const { width, height } = useWindowSize()
+const isMobile = computed(() => width.value < 768)
+```
+
+**`useOnlineStatus()`**
+
+```ts
+const isOnline = useOnlineStatus()
+// Reactive to network state changes
+```
+
+**`useAsyncState(asyncFn, options)`**
+
+```ts
+const { state, data, execute, isLoading, isSuccess, isError } =
+  useAsyncState(fetchUserData, { immediate: true })
+// state: null | 'loading' | 'success' | 'error'
+```
+
+**`useCache(key, defaultValue)`**
+
+```ts
+const { value, set, get, remove, clear } = useCache('user-prefs', {})
 ```
 
 ---
