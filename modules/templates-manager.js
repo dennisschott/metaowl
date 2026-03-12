@@ -13,13 +13,15 @@ import { loadFile } from '@odoo/owl'
  * @returns {Promise<string>}
  */
 export async function mergeTemplates(files) {
-  let templates = '<templates>'
-  for (const file of files) {
-    try {
-      templates += await loadFile(file)
-    } catch (e) {
-      console.error(`[metaowl] Failed to load template: ${file}`, e)
-    }
-  }
-  return templates + '</templates>'
+  const results = await Promise.all(
+    files.map(async (file) => {
+      try {
+        return await loadFile(file)
+      } catch (e) {
+        console.error(`[metaowl] Failed to load template: ${file}`, e)
+        return ''
+      }
+    })
+  )
+  return '<templates>' + results.join('') + '</templates>'
 }
