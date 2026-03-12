@@ -1,6 +1,6 @@
 {
   "name": "metaowl",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Lightweight meta-framework for Odoo OWL — file-based routing, app mounting, Fetch helper, Cache, Meta tags, SSG generator, and a Vite plugin.",
   "type": "module",
   "main": "index.js",
