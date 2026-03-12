@@ -31,8 +31,8 @@
  */
 
 import { useState, onMounted, onWillUnmount } from '@odoo/owl'
-import { Cache } from './cache.js'
-import { Fetch } from './fetch.js'
+import Cache from './cache.js'
+import Fetch from './fetch.js'
 
 /**
  * Authentication state composable.

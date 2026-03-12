@@ -38,7 +38,7 @@
  *   }])
  */
 
-import { Fetch } from './fetch.js'
+import Fetch from './fetch.js'
 
 /**
  * @typedef {Object} OdooConfig

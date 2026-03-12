@@ -84,14 +84,6 @@ export {
   fieldProps
 } from './modules/forms.js'
 export {
-  generateComponentMap,
-  generateImports,
-  generateComponentsObject,
-  createAutoImportPlugin,
-  scanComponents,
-  generateComponentDts
-} from './modules/auto-import.js'
-export {
   OdooService,
   configure,
   authenticate,
