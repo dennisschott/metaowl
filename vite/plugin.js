@@ -63,7 +63,7 @@ export async function metaowlPlugin(options = {}) {
   const componentXml = collectXml(`${componentsDir}/**/*.xml`)
   const pageXml = collectXml(`${pagesDir}/**/*.xml`)
   const layoutXml = collectXml(`${layoutsDir}/**/*.xml`)
-  const allComponents = [...pageXml, ...componentXml, ...layoutXml]
+  const allComponents = [...layoutXml, ...pageXml, ...componentXml]
 
   const defaultRestartGlobs = [
     `${root}/**/*.[jt]s`,
