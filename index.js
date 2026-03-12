@@ -121,6 +121,46 @@ export {
   useCache,
   Composables
 } from './modules/composables.js'
+export {
+  createMockStore,
+  mockRouter,
+  mountComponent,
+  wait,
+  nextTick,
+  flushPromises,
+  userEvent,
+  dom,
+  TestUtils
+} from './modules/test-utils.js'
+export {
+  generateSitemap,
+  generateRobotsTxt,
+  jsonLd,
+  createCanonicalUrl,
+  generateOpenGraph,
+  generateTwitterCard,
+  validateSitemap,
+  getPriorityByDepth,
+  generateSitemapIndex,
+  SEO
+} from './modules/seo.js'
+export {
+  generateManifest,
+  registerServiceWorker,
+  unregisterServiceWorker,
+  isStandalone,
+  isOnline,
+  subscribeToConnectivity,
+  requestPersistentStorage,
+  getStorageInfo,
+  sync,
+  subscribeToPush,
+  unsubscribeFromPush,
+  showNotification,
+  cache,
+  checkCapabilities,
+  PWA
+} from './modules/pwa.js'
 
 /**
  * Boots the metaowl application.
