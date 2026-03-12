@@ -154,7 +154,7 @@ export async function metaowlPlugin(options = {}) {
           chunkSizeWarningLimit: 1024,
           target: 'esnext',
           rollupOptions: {
-            input: resolve(process.cwd(), root, 'index.html'),
+            input: 'index.html',
             output: {
               manualChunks: {
                 vendor: vendorPackages,
