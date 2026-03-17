@@ -4,37 +4,22 @@
 //   const { createPostcssConfig } = require('metaowl/postcss')
 //   module.exports = createPostcssConfig()
 //
-// Override safelist or add content globs:
+// Add extra PostCSS plugins:
 //
 //   module.exports = createPostcssConfig({
-//     safelist: [/^my-custom-class/],
-//     content: ['./templates/**/*.html']
+//     additionalPlugins: [require('some-postcss-plugin')()]
 //   })
-
-const defaultSafelist = []
+//
+// Note: PurgeCSS is intentionally not included. Tailwind CSS v4 performs its
+// own content scanning and generates only the CSS that is actually used.
+// Adding PurgeCSS on top breaks responsive variants (sm:, md:, lg:, etc.)
+// because its default extractor treats ":" as a separator.
 
 function createPostcssConfig(options = {}) {
-  const {
-    safelist = [],
-    content = [],
-    additionalPlugins = []
-  } = options
+  const { additionalPlugins = [] } = options
 
   return {
     plugins: [
-      ...process.env.NODE_ENV === 'production'
-        ? [
-            require('@fullhuman/postcss-purgecss')({
-              content: [
-                './**/*.xml',
-                './**/*.html',
-                './src/**/*.js',
-                ...content
-              ],
-              safelist: [...defaultSafelist, ...safelist]
-            })
-          ]
-        : [],
       ...additionalPlugins
     ]
   }
