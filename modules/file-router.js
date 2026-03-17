@@ -123,7 +123,7 @@ function extractParamNames(filePath) {
  * @param {string} key - import.meta.glob key, e.g. './pages/about/About.js'
  * @returns {string} URL pattern
  */
-function pathFromKey(key) {
+export function pathFromKey(key) {
   // Strip leading './' and 'pages/' prefix
   const rel = key.replace(/^\.\/pages\//, '')
   // Get all segments
@@ -179,7 +179,7 @@ function buildRegexPattern(path) {
   pattern = pattern.replace(/:([^/(]+)\(\.\*\)/g, '([^/]+(?:/[^/]+)*)')
 
   // Replace optional params :name? → optional capture
-  pattern = pattern.replace(/:([^/(]+)\?/g, '(?:\\/([^/]+))?')
+  pattern = pattern.replace(/\/:([^/(]+)\?/g, '(?:/([^/]+))?')
 
   // Replace required params :name → capture
   pattern = pattern.replace(/:([^/(\s]+)/g, '([^/]+)')
@@ -259,7 +259,7 @@ export function buildRoutes(modules) {
 
   for (const [key, mod] of Object.entries(modules)) {
     const path = pathFromKey(key)
-    const name = path === '/' ? 'index' : path.slice(1).replace(/[^a-zA-Z0-9]/g, '-')
+    const name = path === '/' ? 'index' : path.slice(1).replace(/[^a-zA-Z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
     const component = componentFromModule(mod, key)
     const params = extractParamNames(key)
 
@@ -353,8 +353,8 @@ export function generateUrl(routes, name, params = {}) {
     path = path.replace(`:${key}?`, value)
   }
 
-  // Remove remaining optional params
-  path = path.replace(/\/:[^/?]+\?/g, '')
+  // Remove remaining optional params and trailing ?
+  path = path.replace(/\/:[^/]+\?/g, '').replace(/\?$/, '')
 
   return path
 }
@@ -457,8 +457,10 @@ export function createCatchAllRoute(component, options = {}) {
  * @returns {object} Redirect route definition
  */
 export function createRedirectRoute(from, to) {
+  // Remove leading slash and convert to dash-separated name
+  const name = from.replace(/^\//, '').replace(/[^a-zA-Z0-9]/g, '-').replace(/-+/g, '-')
   return {
-    name: `redirect-${from.replace(/[^a-zA-Z0-9]/g, '-')}`,
+    name: `redirect-${name}`,
     path: [from],
     redirect: to,
     component: null

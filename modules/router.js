@@ -442,6 +442,18 @@ async function runGuard(guard, to, from) {
 }
 
 /**
+ * Reset router state (for testing purposes).
+ */
+export function resetRouter() {
+  _beforeEachGuards.length = 0
+  _afterEachHooks.length = 0
+  _isNavigating = false
+  _cancelNavigation = null
+  _currentRoute = null
+  _previousRoute = null
+}
+
+/**
  * Navigation cancelled error.
  */
 class NavigationCancelled extends Error {

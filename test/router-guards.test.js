@@ -13,7 +13,8 @@ import {
   back,
   forward,
   go,
-  router
+  router,
+  resetRouter
 } from '../modules/router.js'
 
 // Mock document.location
@@ -25,15 +26,21 @@ describe('Router Guards', () => {
     // Save original location
     originalLocation = window.location
 
-    // Mock location
-    delete window.location
-    window.location = {
+    // Mock location - create a new object that can be used for both window and document
+    const mockLocation = {
       pathname: '/',
       search: '',
       href: 'http://localhost/',
       replace: vi.fn(),
       assign: vi.fn()
     }
+
+    // Mock location
+    delete window.location
+    window.location = mockLocation
+
+    // Also mock document.location for router (use same object reference)
+    document.location = mockLocation
 
     // Mock history
     window.history = {
@@ -44,6 +51,7 @@ describe('Router Guards', () => {
 
     // Reset router state
     vi.clearAllMocks()
+    resetRouter()
 
     // Define test routes
     mockRoutes = [

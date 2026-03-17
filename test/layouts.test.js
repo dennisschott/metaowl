@@ -305,8 +305,8 @@ describe('Layouts', () => {
 
   describe('layout decorator', () => {
     it('sets layout property on component', () => {
-      @layout('admin')
       class AdminPage extends MockComponent {}
+      layout('admin')(AdminPage)
 
       expect(AdminPage.layout).toBe('admin')
     })
@@ -323,15 +323,15 @@ describe('Layouts', () => {
 
   describe('defineLayout decorator', () => {
     it('sets layout property', () => {
-      @defineLayout('admin')
       class AdminPage extends MockComponent {}
+      defineLayout('admin')(AdminPage)
 
       expect(AdminPage.layout).toBe('admin')
     })
 
     it('sets layoutOptions property', () => {
-      @defineLayout('admin', { persistent: true })
       class AdminPage extends MockComponent {}
+      defineLayout('admin', { persistent: true })(AdminPage)
 
       expect(AdminPage.layoutOptions).toEqual({ persistent: true })
     })
