@@ -28,7 +28,7 @@ function collectXml(globPattern) {
 /**
  * Merge all XML template files into a single XML string.
  * Removes <templates> wrappers from individual files and wraps everything in a single <templates>.
- * The result is minified to reduce file size.
+ * Templates are concatenated without minification to preserve intentional line breaks.
  *
  * @param {string[]} xmlPaths - Array of absolute file paths to XML files
  * @returns {string} Merged XML string
@@ -46,10 +46,7 @@ function mergeXmlFiles(xmlPaths) {
     }
   }).join('')
 
-  // Minify: remove unnecessary whitespace while keeping valid XML structure
-  const minified = '<templates>' + templates.replace(/\s+/g, ' ').replace(/>\s+</g, '><').trim() + '</templates>'
-
-  return minified
+  return '<templates>' + templates + '</templates>'
 }
 
 /**
