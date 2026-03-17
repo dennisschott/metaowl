@@ -4,7 +4,6 @@ import { mkdirSync, copyFileSync, cpSync, existsSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { globSync } from 'glob'
 import { config as dotenvConfig } from 'dotenv'
-import ViteRestart from 'vite-plugin-restart'
 import tsconfigPaths from 'vite-tsconfig-paths'
 
 const require = createRequire(import.meta.url)
@@ -36,7 +35,6 @@ function collectXml(globPattern) {
  * @param {string} [options.componentsDir='src/components'] - OWL components directory.
  * @param {string} [options.pagesDir='src/pages'] - OWL pages directory.
  * @param {string} [options.layoutsDir='src/layouts'] - OWL layouts directory.
- * @param {string[]} [options.restartGlobs] - Additional globs that trigger dev-server restart.
  * @param {string} [options.frameworkEntry] - Framework entry for manual chunk.
  * @param {string[]} [options.vendorPackages] - npm packages bundled into the vendor chunk.
  * @param {string} [options.envPrefix] - Only expose env vars with this prefix (plus NODE_ENV) via process.env.
@@ -53,7 +51,6 @@ export async function metaowlPlugin(options = {}) {
     componentsDir = 'src/components',
     pagesDir = 'src/pages',
     layoutsDir = 'src/layouts',
-    restartGlobs = [],
     frameworkEntry = './node_modules/metaowl/index.js',
     vendorPackages = ['@odoo/owl'],
     autoImport = {},
@@ -64,14 +61,6 @@ export async function metaowlPlugin(options = {}) {
   const pageXml = collectXml(`${pagesDir}/**/*.xml`)
   const layoutXml = collectXml(`${layoutsDir}/**/*.xml`)
   const allComponents = [...layoutXml, ...pageXml, ...componentXml]
-
-  const defaultRestartGlobs = [
-    `${root}/**/*.[jt]s`,
-    `${root}/**/*.xml`,
-    `${root}/**/*.html`,
-    `${root}/**/*.css`,
-    `${root}/**/*.scss`
-  ]
 
   let _outDirResolved = null
 
@@ -111,9 +100,6 @@ export async function metaowlPlugin(options = {}) {
   const plugins = [
     ...(autoImportPlugin ? [autoImportPlugin] : []),
     tsconfigPaths({ root: process.cwd() }),
-    ViteRestart({
-      restart: [...defaultRestartGlobs, ...restartGlobs]
-    }),
     {
       name: 'metaowl:define',
       config(cfg, { mode }) {
@@ -170,11 +156,6 @@ export async function metaowlPlugin(options = {}) {
 
         cfg.optimizeDeps = {
           include: ['@odoo/owl'],
-          entries: [
-            `${componentsDir}/**/*.[jt]s`,
-            `${pagesDir}/**/*.[jt]s`,
-            `${layoutsDir}/**/*.[jt]s`
-          ],
           ...(cfg.optimizeDeps ?? {})
         }
       },
