@@ -1,7 +1,7 @@
 import { mountApp } from './modules/app-mounter.js'
 import { buildRoutes } from './modules/file-router.js'
 import { processRoutes } from './modules/router.js'
-import { discoverLayouts } from './modules/layouts.js'
+import { discoverLayouts, buildLayouts, setDefaultLayout } from './modules/layouts.js'
 
 export { default as Fetch } from './modules/fetch.js'
 export { default as Cache } from './modules/cache.js'
@@ -176,7 +176,6 @@ export async function boot(routesOrModules = {}, layoutsOrModules = null) {
   try {
     if (layoutsOrModules) {
       // Use layouts provided by Vite plugin transformation
-      const { buildLayouts, setDefaultLayout } = await import('./modules/layouts.js')
       buildLayouts(layoutsOrModules)
       setDefaultLayout('default')
     } else {

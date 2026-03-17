@@ -57,7 +57,7 @@
  * }
  */
 
-import { Component, xml } from '@odoo/owl'
+import { Component, xml, mount } from '@odoo/owl'
 
 /**
  * Registry of layout components.
@@ -279,14 +279,12 @@ export async function mountWithLayout(pageComponent, target, options = {}, confi
 
   if (!LayoutClass) {
     console.warn(`[metaowl] Layout "${layoutName}" not found, mounting page without layout`)
-    const { mount } = await import('@odoo/owl')
     return mount(pageComponent, target, { ...config, props, templates })
   }
 
   // Create wrapper that combines layout and page
   const WrapperClass = createLayoutWrapper(LayoutClass, pageComponent, props)
 
-  const { mount } = await import('@odoo/owl')
   const instance = await mount(WrapperClass, target, { ...config, templates })
 
   _currentLayout = instance
