@@ -111,10 +111,11 @@ class Router {
   /**
    * Resolve current URL against route table.
    *
+   * @param {string} [path] - Optional path to resolve (for testing)
    * @returns {Route|null}
    */
-  resolve() {
-    const currentPath = document.location.pathname
+  resolve(path) {
+    const currentPath = path || document.location.pathname
 
     // Try exact match first
     if (this.routeMap.has(currentPath)) {
@@ -254,10 +255,14 @@ class Router {
  * Process routes with guards.
  *
  * @param {object[]} routes - Route table
+ * @param {string} [customPath] - Optional custom path for testing
  * @returns {Promise<object[]>} Resolved route or throws error
  * @throws {NavigationError} If navigation is aborted
  */
-export async function processRoutes(routes) {
+export async function processRoutes(routes, customPath) {
+  // Use custom path for testing if provided
+  const targetPath = customPath || document.location.pathname
+
   // Inject SSG-compatible path variants
   for (const route of routes) {
     const originalPaths = [...route.path]
@@ -269,10 +274,10 @@ export async function processRoutes(routes) {
   }
 
   const router = new Router(routes)
-  const toRoute = router.resolve()
+  const toRoute = router.resolve(targetPath)
 
   if (!toRoute) {
-    throw new Error(`No route found for "${document.location.pathname}".`)
+    throw new Error(`No route found for "${targetPath}".`)
   }
 
   // Build route object

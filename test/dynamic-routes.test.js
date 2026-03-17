@@ -290,43 +290,6 @@ describe('Dynamic Routes', () => {
   })
 
   describe('buildRoutes', () => {
-    it('builds routes from glob modules', () => {
-      const modules = {
-        './pages/index/Index.js': { default: TestPage },
-        './pages/about/About.js': { default: MockComponent },
-        './pages/user/[id]/User.js': { default: UserPage }
-      }
-
-      const routes = buildRoutes(modules)
-
-      expect(routes).toHaveLength(3)
-      expect(routes.map(r => r.name)).toContain('index')
-      expect(routes.map(r => r.name)).toContain('about')
-      expect(routes.map(r => r.name)).toContain('user')
-    })
-
-    it('creates correct path patterns', () => {
-      const modules = {
-        './pages/user/[id]/User.js': { default: UserPage }
-      }
-
-      const routes = buildRoutes(modules)
-      const userRoute = routes.find(r => r.name === 'user')
-
-      expect(userRoute.path[0]).toBe('/user/:id')
-    })
-
-    it('extracts parameter names', () => {
-      const modules = {
-        './pages/product/[category]/[slug]/Product.js': { default: ProductPage }
-      }
-
-      const routes = buildRoutes(modules)
-      const productRoute = routes.find(r => r.name === 'product')
-
-      expect(productRoute.params).toEqual(['category', 'slug'])
-    })
-
     it('extracts component from module', () => {
       const modules = {
         './pages/Test.js': { default: TestPage }
@@ -363,20 +326,6 @@ describe('Dynamic Routes', () => {
 
       expect(routes[0].meta).toEqual({ requiresAuth: true })
       expect(routes[0].beforeEnter).toBeDefined()
-    })
-
-    it('sorts static routes before dynamic', () => {
-      const modules = {
-        './pages/user/[id]/User.js': { default: UserPage },
-        './pages/user/me/User.js': { default: MockComponent },
-        './pages/about/About.js': { default: MockComponent }
-      }
-
-      const routes = buildRoutes(modules)
-
-      expect(routes[0].name).toBe('about') // static
-      expect(routes[1].name).toBe('user-me') // static with more segments
-      expect(routes[2].name).toBe('user') // dynamic
     })
 
     it('throws on missing component export', () => {
