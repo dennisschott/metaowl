@@ -93,13 +93,42 @@ function deriveRoute(pageFile) {
 }
 
 /**
+ * Extracts the layout name from a page component JS file.
+ * Looks for `static layout = 'layoutName'` or `@layout('layoutName')`.
+ *
+ * @param {string} pageFile - Absolute path to the page JS file
+ * @returns {string|null} Layout name or null if not found
+ */
+function extractLayoutName(pageFile) {
+  const jsSource = readFileSync(pageFile, 'utf-8')
+
+  // Match: static layout = 'layoutName' or static layout = "layoutName"
+  let match = jsSource.match(/static\s+layout\s*=\s*['"]([^'"]+)['"]/)
+  if (match) return match[1]
+
+  // Match: @layout('layoutName') or @layout("layoutName")
+  match = jsSource.match(/@layout\s*\(\s*['"]([^'"]+)['"]\s*\)/)
+  if (match) return match[1]
+
+  // Match: @defineLayout('layoutName', ...)
+  match = jsSource.match(/@defineLayout\s*\(\s*['"]([^'"]+)['"]/)
+  if (match) return match[1]
+
+  return 'default'
+}
+
+/**
  * Converts an OWL XML template to best-effort static HTML.
  * - Strips t-name on the root element
  * - Strips all t-* attributes
  * - Unwraps bare <t> elements (replaces with their inner content)
  * - Replaces PascalCase component tags with an HTML comment placeholder
+ * - Replaces t-slot="default" with provided page content
+ *
+ * @param {string} xml - OWL XML template
+ * @param {string} [pageContent] - Optional page content to inject into t-slot="default"
  */
-function xmlToStaticHtml(xml) {
+function xmlToStaticHtml(xml, pageContent = '') {
   let html = xml
   // Remove t-name attribute from root
   html = html.replace(/\s+t-name="[^"]*"/g, '')
@@ -109,6 +138,11 @@ function xmlToStaticHtml(xml) {
   html = html.replace(/<t\s*\/>/g, '')
   // Unwrap <t ...> ... </t> blocks — replace opening/closing tags with content
   html = html.replace(/<t(?:\s[^>]*)?>([\s\S]*?)<\/t>/g, (_, inner) => inner)
+  // Replace t-slot="default" with page content (if provided)
+  if (pageContent) {
+    html = html.replace(/<t\s+t-slot="default"\s*\/?>/g, pageContent)
+    html = html.replace(/<t\s+t-slot="default"[^>]*>([\s\S]*?)<\/t>/g, pageContent)
+  }
   // Replace PascalCase component tags with a comment stub
   // Matches <ComponentName ... /> and <ComponentName ...></ComponentName>
   html = html.replace(/<([A-Z][A-Za-z0-9]*)\s*\/>/g, '<!-- $1 -->')
@@ -125,14 +159,40 @@ function buildShell(baseHtml, pageFile) {
   const meta = extractMetaFromJs(jsSource)
   html = injectMeta(html, meta)
 
-  // Inject static HTML from OWL XML template (auto-extracted, best-effort)
-  const xmlFile = resolve(cwd, pageFile.replace(/\.js$/, '.xml'))
-  if (existsSync(xmlFile)) {
-    const xmlContent = readFileSync(xmlFile, 'utf-8')
-    const staticHtml = xmlToStaticHtml(xmlContent)
-    if (staticHtml) {
-      html = html.replace(/(<div\s+id="metaowl"[^>]*>)(<\/div>)/, `$1${staticHtml}$2`)
-    }
+  // Get the page's layout name
+  const layoutName = extractLayoutName(resolve(cwd, pageFile))
+  const layoutsDir = metaowlConfig.layoutsDir ?? 'src/layouts'
+
+  // Try to find and read the layout XML template
+  let finalContent = ''
+
+  // First, try to read the layout XML
+  const layoutXmlFile = resolve(cwd, layoutsDir, layoutName, `${layoutName.charAt(0).toUpperCase() + layoutName.slice(1)}Layout.xml`)
+  const layoutXmlExists = existsSync(layoutXmlFile)
+
+  // Read the page XML template
+  const pageXmlFile = resolve(cwd, pageFile.replace(/\.js$/, '.xml'))
+  const pageXmlExists = existsSync(pageXmlFile)
+
+  if (layoutXmlExists && pageXmlExists) {
+    // Read both layout and page templates
+    const layoutXmlContent = readFileSync(layoutXmlFile, 'utf-8')
+    const pageXmlContent = readFileSync(pageXmlFile, 'utf-8')
+
+    // Convert page XML to static HTML first
+    const pageStaticHtml = xmlToStaticHtml(pageXmlContent)
+
+    // Then inject into layout's t-slot="default"
+    finalContent = xmlToStaticHtml(layoutXmlContent, pageStaticHtml)
+  } else if (pageXmlExists) {
+    // No layout found, just use page content
+    const pageXmlContent = readFileSync(pageXmlFile, 'utf-8')
+    finalContent = xmlToStaticHtml(pageXmlContent)
+  }
+
+  // Inject the combined layout + page HTML
+  if (finalContent) {
+    html = html.replace(/(<div\s+id="metaowl"[^>]*>)(<\/div>)/, `$1${finalContent}$2`)
   }
 
   return html
