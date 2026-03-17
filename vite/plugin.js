@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'node:url'
 import { resolve, dirname } from 'node:path'
-import { mkdirSync, copyFileSync, cpSync, existsSync } from 'node:fs'
+import { mkdirSync, copyFileSync, cpSync, existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { globSync } from 'glob'
 import { config as dotenvConfig } from 'dotenv'
@@ -23,6 +23,33 @@ function resolveOwlPath() {
  */
 function collectXml(globPattern) {
   return globSync(globPattern).map(p => p.replace(/^src[\\/]/, '/'))
+}
+
+/**
+ * Merge all XML template files into a single XML string.
+ * Removes <templates> wrappers from individual files and wraps everything in a single <templates>.
+ * The result is minified to reduce file size.
+ *
+ * @param {string[]} xmlPaths - Array of absolute file paths to XML files
+ * @returns {string} Merged XML string
+ */
+function mergeXmlFiles(xmlPaths) {
+  const templates = xmlPaths.map(filePath => {
+    try {
+      let content = readFileSync(filePath, 'utf-8')
+      // Remove <templates> wrapper if present in individual file
+      content = content.replace(/<templates>/g, '').replace(/<\/templates>/g, '')
+      return content
+    } catch (e) {
+      console.error(`[metaowl] Failed to read XML file: ${filePath}`, e)
+      return ''
+    }
+  }).join('')
+
+  // Minify: remove unnecessary whitespace while keeping valid XML structure
+  const minified = '<templates>' + templates.replace(/\s+/g, ' ').replace(/>\s+</g, '><').trim() + '</templates>'
+
+  return minified
 }
 
 /**
@@ -119,7 +146,7 @@ export async function metaowlPlugin(options = {}) {
         cfg.define = {
           ...(cfg.define ?? {}),
           DEV_MODE: isDev,
-          COMPONENTS: JSON.stringify(allComponents),
+          COMPONENTS: JSON.stringify(isDev ? allComponents : ['/templates.xml']),
           'process.env': safeEnv
         }
 
@@ -200,14 +227,11 @@ export async function metaowlPlugin(options = {}) {
       closeBundle() {
         const projectRoot = process.cwd()
 
-        // Copy OWL XML templates (loaded at runtime via fetch — not processed by Vite)
+        // Merge all OWL XML templates into a single file
         const xmlFiles = globSync([`${componentsDir}/**/*.xml`, `${pagesDir}/**/*.xml`, `${layoutsDir}/**/*.xml`])
-        for (const xmlFile of xmlFiles) {
-          const relPath = xmlFile.replace(new RegExp(`^${root}[\\/]`), '')
-          const dest = resolve(_outDirResolved, relPath)
-          mkdirSync(dirname(dest), { recursive: true })
-          copyFileSync(resolve(projectRoot, xmlFile), dest)
-        }
+        const mergedXml = mergeXmlFiles(xmlFiles)
+        const templatesPath = resolve(_outDirResolved, 'templates.xml')
+        writeFileSync(templatesPath, mergedXml, 'utf-8')
 
         // Copy assets/images (referenced via absolute URLs in XML — not processed by Vite)
         const srcImages = resolve(projectRoot, root, 'assets', 'images')
