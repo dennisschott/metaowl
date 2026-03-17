@@ -122,14 +122,26 @@ function extractLayoutName(pageFile) {
  * - Strips t-name on the root element
  * - Strips all t-* attributes
  * - Unwraps bare <t> elements (replaces with their inner content)
- * - Replaces PascalCase component tags with an HTML comment placeholder
+ * - Replaces PascalCase component tags with their template content
  * - Replaces t-slot="default" with provided page content
+ * - Removes <templates> wrapper and root <t> elements
  *
  * @param {string} xml - OWL XML template
  * @param {string} [pageContent] - Optional page content to inject into t-slot="default"
+ * @param {object} [options] - Options object
+ * @param {Map<string, string>} [options.templateCache] - Cache of template name -> content
  */
-function xmlToStaticHtml(xml, pageContent = '') {
+function xmlToStaticHtml(xml, pageContent = '', options = {}) {
+  const { templateCache } = options
   let html = xml
+
+  // Remove <templates> wrapper
+  html = html.replace(/<templates>/g, '').replace(/<\/templates>/g, '')
+
+  // Remove root <t> elements (self-closing or with content)
+  // Match <t ...>...</t> at the start and end
+  html = html.replace(/^\s*<t[^>]*>/, '').replace(/<\/t>\s*$/, '')
+
   // Remove t-name attribute from root
   html = html.replace(/\s+t-name="[^"]*"/g, '')
   // Remove all t-* attributes (handles both t-if="..." and bare t-else/t-else)
@@ -143,10 +155,47 @@ function xmlToStaticHtml(xml, pageContent = '') {
     html = html.replace(/<t\s+t-slot="default"\s*\/?>/g, pageContent)
     html = html.replace(/<t\s+t-slot="default"[^>]*>([\s\S]*?)<\/t>/g, pageContent)
   }
-  // Replace PascalCase component tags with a comment stub
-  // Matches <ComponentName ... /> and <ComponentName ...></ComponentName>
-  html = html.replace(/<([A-Z][A-Za-z0-9]*)\s*\/>/g, '<!-- $1 -->')
-  html = html.replace(/<([A-Z][A-Za-z0-9]*)(?:\s[^>]*)?>[\s\S]*?<\/\1>/g, '<!-- $1 -->')
+
+  // Replace PascalCase component tags with their template content (if available)
+  if (templateCache) {
+    // Keep replacing until no more changes (for nested components)
+    let previousHtml
+    do {
+      previousHtml = html
+      html = html.replace(/<([A-Z][A-Za-z0-9]*)\s*\/>/g, (match, componentName) => {
+        // Try different naming conventions
+        const templateNames = [
+          componentName,
+          componentName.charAt(0).toLowerCase() + componentName.slice(1),
+          componentName + 'Component',
+        ]
+        for (const name of templateNames) {
+          if (templateCache.has(name)) {
+            return templateCache.get(name)
+          }
+        }
+        return match // Keep original if not found
+      })
+      html = html.replace(/<([A-Z][A-Za-z0-9]*)(?:\s[^>]*)?>([\s\S]*?)<\/\1>/g, (match, componentName, innerContent) => {
+        const templateNames = [
+          componentName,
+          componentName.charAt(0).toLowerCase() + componentName.slice(1),
+          componentName + 'Component',
+        ]
+        for (const name of templateNames) {
+          if (templateCache.has(name)) {
+            return templateCache.get(name)
+          }
+        }
+        return match
+      })
+    } while (html !== previousHtml)
+  } else {
+    // No cache available, use comment stubs as fallback
+    html = html.replace(/<([A-Z][A-Za-z0-9]*)\s*\/>/g, '<!-- $1 -->')
+    html = html.replace(/<([A-Z][A-Za-z0-9]*)(?:\s[^>]*)?>[\s\S]*?<\/\1>/g, '<!-- $1 -->')
+  }
+
   return html.trim()
 }
 
@@ -162,6 +211,60 @@ function buildShell(baseHtml, pageFile) {
   // Get the page's layout name
   const layoutName = extractLayoutName(resolve(cwd, pageFile))
   const layoutsDir = metaowlConfig.layoutsDir ?? 'src/layouts'
+  const componentsDir = metaowlConfig.componentsDir ?? 'src/components'
+
+  // Build template cache from all XML files (components, pages, layouts)
+  const templateCache = new Map()
+
+  // Scan component XML files
+  const componentXmlFiles = globSync(`${componentsDir}/**/*.xml`, { cwd })
+  for (const componentXmlFile of componentXmlFiles) {
+    const content = readFileSync(resolve(cwd, componentXmlFile), 'utf-8')
+    // Extract t-name values and their content: <t t-name="ComponentName">...content...</t>
+    const tNameMatches = content.matchAll(/<t\s+t-name="([^"]+)"[^>]*>([\s\S]*?)<\/t>/g)
+    for (const match of tNameMatches) {
+      const templateName = match[1]
+      const templateContent = match[2]
+      templateCache.set(templateName, templateContent)
+    }
+    // Also try to get the root element as the template (without t-name)
+    const rootMatch = content.match(/<templates>\s*<t[^>]*>([\s\S]*?)<\/t>\s*<\/templates>/)
+    if (rootMatch) {
+      // Try to derive component name from file path
+      const fileName = componentXmlFile.replace(/\.xml$/, '').split('/').pop()
+      if (fileName) {
+        templateCache.set(fileName, rootMatch[1])
+      }
+    }
+  }
+
+  // Also scan layout XML files for templates
+  const layoutXmlFiles = globSync(`${layoutsDir}/**/*.xml`, { cwd })
+  for (const layoutXmlFile of layoutXmlFiles) {
+    const content = readFileSync(resolve(cwd, layoutXmlFile), 'utf-8')
+    const tNameMatches = content.matchAll(/<t\s+t-name="([^"]+)"[^>]*>([\s\S]*?)<\/t>/g)
+    for (const match of tNameMatches) {
+      templateCache.set(match[1], match[2])
+    }
+  }
+
+  // Also scan page XML files for templates
+  const pageXmlFiles = globSync(`${pagesDir}/**/*.xml`, { cwd })
+  for (const pageXmlFile of pageXmlFiles) {
+    const content = readFileSync(resolve(cwd, pageXmlFile), 'utf-8')
+    const tNameMatches = content.matchAll(/<t\s+t-name="([^"]+)"[^>]*>([\s\S]*?)<\/t>/g)
+    for (const match of tNameMatches) {
+      templateCache.set(match[1], match[2])
+    }
+    // Try to get the root element as the template (without t-name)
+    const rootMatch = content.match(/<templates>\s*<t[^>]*>([\s\S]*?)<\/t>\s*<\/templates>/)
+    if (rootMatch) {
+      const fileName = pageXmlFile.replace(/\.xml$/, '').split('/').pop()
+      if (fileName) {
+        templateCache.set(fileName, rootMatch[1])
+      }
+    }
+  }
 
   // Try to find and read the layout XML template
   let finalContent = ''
@@ -180,14 +283,14 @@ function buildShell(baseHtml, pageFile) {
     const pageXmlContent = readFileSync(pageXmlFile, 'utf-8')
 
     // Convert page XML to static HTML first
-    const pageStaticHtml = xmlToStaticHtml(pageXmlContent)
+    const pageStaticHtml = xmlToStaticHtml(pageXmlContent, '', { templateCache })
 
     // Then inject into layout's t-slot="default"
-    finalContent = xmlToStaticHtml(layoutXmlContent, pageStaticHtml)
+    finalContent = xmlToStaticHtml(layoutXmlContent, pageStaticHtml, { templateCache })
   } else if (pageXmlExists) {
     // No layout found, just use page content
     const pageXmlContent = readFileSync(pageXmlFile, 'utf-8')
-    finalContent = xmlToStaticHtml(pageXmlContent)
+    finalContent = xmlToStaticHtml(pageXmlContent, '', { templateCache })
   }
 
   // Inject the combined layout + page HTML
