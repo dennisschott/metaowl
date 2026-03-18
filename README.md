@@ -7,7 +7,9 @@
 [![Node.js >=18](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](https://nodejs.org)
 [![GitHub Issues](https://img.shields.io/github/issues/dennisschott/metaowl.svg)](https://github.com/dennisschott/metaowl/issues)
 
-metaowl is a complete solution for building production-ready OWL applications with everything you need out of the box:
+> ⚠️ **Work in progress:** metaowl is not production-ready yet. APIs may change without notice, and features may still break between releases.
+
+metaowl is a complete solution for building OWL applications with everything you need out of the box:
 
 **Core Infrastructure:** File-based routing with dynamic routes, layout system, navigation guards, Pinia-inspired state management, and zero-config app mounting.
 
