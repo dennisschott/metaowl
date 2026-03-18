@@ -393,7 +393,7 @@ describe('Dynamic Routes', () => {
 
       // Check that routes are sorted correctly
       const blogRoute = routes.find(r => r.name === 'blog')
-      const categoryRoute = routes.find(r => r.name.includes('category'))
+      const categoryRoute = routes.find(r => r.name.includes('category') && !r.name.includes('slug'))
       const postRoute = routes.find(r => r.name.includes('slug'))
 
       expect(blogRoute.path[0]).toBe('/blog')
