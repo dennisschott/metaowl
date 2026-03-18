@@ -267,7 +267,7 @@ File-based routing supports dynamic segments using bracket notation. The router 
 | `pages/product/[category]/[slug]/Product.js` | `/product/:category/:slug` | `/product/tech/hello` | `{ category: 'tech', slug: 'hello' }` |
 | `pages/blog/[id]/[slug?]/Blog.js` | `/blog/:id/:slug?` | `/blog/123` or `/blog/123/my-post` | `{ id: '123' }` or `{ id: '123', slug: 'my-post' }` |
 | `pages/docs/[...path]/Docs.js` | `/docs/:path(.*)` | `/docs/api/routing` | `{ path: 'api/routing' }` |
-| `pages/[...404]/NotFound.js` | `/:path(.*)` | `/any/unknown/path` | `{ path: 'any/unknown/path' }` |
+| `pages/[...path]/NotFound.js` | `/:path(.*)` | `/any/unknown/path` | `{ path: 'any/unknown/path' }` |
 
 **Param Types:**
 
@@ -291,6 +291,37 @@ export class UserPage extends Component {
   static props = ['params']
 }
 ```
+
+---
+
+### 404 / Not Found Pages
+
+Create a catch-all route at `pages/[...path]/` to handle unknown URLs:
+
+```
+src/pages/
+  [...]path]/
+    NotFound.js   ← rendered for any unmatched URL
+    NotFound.xml
+```
+
+```js
+// pages/[...path]/NotFound.js
+import { Component } from '@odoo/owl'
+import { Meta } from 'metaowl'
+
+export default class NotFound extends Component {
+  static template = 'NotFound'
+
+  setup() {
+    Meta.title('404 – Page Not Found')
+  }
+}
+```
+
+The catch-all directory can be named `[...path]`, `[...404]`, or any `[...name]` — the bracket-dot-dot-dot prefix is what makes it a catch-all regardless of name.
+
+If no catch-all route exists and a URL cannot be matched, metaowl renders a minimal built-in 404 message so the page doesn't silently break.
 
 ---
 

@@ -188,6 +188,27 @@ export async function boot(routesOrModules = {}, layoutsOrModules = null) {
   const routes = Array.isArray(routesOrModules)
     ? routesOrModules
     : buildRoutes(routesOrModules)
-  const route = await processRoutes(routes)
+
+  let route
+  try {
+    route = await processRoutes(routes)
+  } catch (error) {
+    if (error.message && error.message.startsWith('No route found')) {
+      console.warn('[metaowl]', error.message)
+      const el = document.getElementById('metaowl')
+      if (el) {
+        el.innerHTML = [
+          '<div style="font-family:sans-serif;padding:3rem;text-align:center">',
+          '<h1 style="font-size:4rem;font-weight:700;margin:0;color:#6b7280">404</h1>',
+          '<p style="font-size:1.25rem;color:#9ca3af;margin-top:0.5rem">Page not found</p>',
+          '<p style="margin-top:2rem"><a href="/" style="color:#3b82f6;text-decoration:none">← Go home</a></p>',
+          '</div>'
+        ].join('')
+      }
+      return
+    }
+    throw error
+  }
+
   await mountApp(route)
 }

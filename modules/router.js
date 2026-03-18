@@ -162,24 +162,25 @@ class Router {
    * @returns {boolean}
    */
   pathMatches(routePath, currentPath) {
-    // Convert route pattern to regex
+    // Simple exact match for static routes
     if (!routePath.includes(':') && !routePath.includes('*')) {
-      // Simple exact match
       const normalizedRoute = routePath.replace(/\/$/, '') || '/'
       const normalizedCurrent = currentPath.replace(/\/$/, '') || '/'
       return normalizedRoute === normalizedCurrent
     }
 
-    // Dynamic route matching
+    // Build regex without pre-escaping the whole string (which would break : and * handling)
     let pattern = routePath
-      // Escape special regex characters except pattern markers
-      .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
-      // Replace optional params :param?
-      .replace(/\\:([^/]+)\\?/g, '(?:\\/([^/]+))?')
-      // Replace required params :param
-      .replace(/\\:([^/]+)/g, '([^/]+)')
-      // Replace wildcards
-      .replace(/\\\*/g, '(.*)')
+      // Escape forward slashes
+      .replace(/\//g, '\\/')
+      // Replace catch-all :name(.*) params — must come before required-param replacement
+      .replace(/:([^/(]+)\(\.\*\)/g, '(.*)')
+      // Replace optional params /:name?
+      .replace(/\/:([^/(]+)\?/g, '(?:/([^/]+))?')
+      // Replace required params :name
+      .replace(/:([^/(?\s]+)/g, '([^/]+)')
+      // Replace bare wildcards *
+      .replace(/\*/g, '(.*)')
 
     pattern = '^' + pattern + '$'
     const regex = new RegExp(pattern)
@@ -219,12 +220,23 @@ class Router {
       return null
     }
 
-    // Extract parameter names
+    // Extract parameter names in the correct order
     const paramNames = []
-    const pattern = routePath.replace(/:([^/?]+)\??/g, (match, name) => {
-      paramNames.push(name)
-      return '([^/]+)'
-    })
+
+    // Build pattern: handle catch-all :name(.*) first, then optional, then required
+    let pattern = routePath
+      .replace(/:([^/(]+)\(\.\*\)/g, (match, name) => {
+        paramNames.push(name)
+        return '(.*)'
+      })
+      .replace(/\/:([^/(]+)\?/g, (match, name) => {
+        paramNames.push(name)
+        return '(?:/([^/]+))?'
+      })
+      .replace(/:([^/(?\s]+)/g, (match, name) => {
+        paramNames.push(name)
+        return '([^/]+)'
+      })
 
     const regex = new RegExp('^' + pattern + '$')
     const matches = currentPath.match(regex)
@@ -233,7 +245,9 @@ class Router {
 
     const params = {}
     for (let i = 0; i < paramNames.length; i++) {
-      params[paramNames[i]] = matches[i + 1]
+      if (matches[i + 1] !== undefined) {
+        params[paramNames[i]] = matches[i + 1]
+      }
     }
 
     return params
