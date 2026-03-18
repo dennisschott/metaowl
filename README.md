@@ -4,7 +4,7 @@
 
 [![npm version](https://img.shields.io/npm/v/metaowl.svg)](https://www.npmjs.com/package/metaowl)
 [![License: LGPL v3](https://img.shields.io/badge/License-LGPL_v3-blue.svg)](LICENSE)
-[![Node.js >=20](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](https://nodejs.org)
+[![Node.js >=20](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](https://nodejs.org)
 [![GitHub Issues](https://img.shields.io/github/issues/dennisschott/metaowl.svg)](https://github.com/dennisschott/metaowl/issues)
 
 > ⚠️ **Work in progress:** metaowl is not production-ready yet. APIs may change without notice, and features may still break between releases.
@@ -101,7 +101,7 @@ All powered by a batteries-included Vite plugin that handles the build pipeline,
 
 | Dependency | Version |
 |---|---|
-| Node.js | `>=18` |
+| Node.js | `>=20` |
 | `@odoo/owl` | bundled |
 
 ---
