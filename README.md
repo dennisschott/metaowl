@@ -275,20 +275,19 @@ File-based routing supports dynamic segments using bracket notation. The router 
 - `[param?]` — Optional parameter, may be omitted
 - `[...param]` — Catch-all parameter, matches any number of segments
 
-Access parameters in your component:
+Access parameters in your component via `getCurrentRoute()`:
 
 ```js
-import { Component, xml } from '@odoo/owl'
+import { Component } from '@odoo/owl'
+import { getCurrentRoute } from 'metaowl'
 
-export class UserPage extends Component {
-  static template = xml`
-    <div>
-      <h1>User Profile</h1>
-      <p>ID: <t t-esc="props.params.id"/></p>
-    </div>
-  `
-  
-  static props = ['params']
+export default class UserPage extends Component {
+  static template = 'UserPage'
+
+  setup() {
+    const route = getCurrentRoute()
+    this.id = route?.params?.id
+  }
 }
 ```
 
@@ -300,7 +299,7 @@ Create a catch-all route at `pages/[...path]/` to handle unknown URLs:
 
 ```
 src/pages/
-  [...]path]/
+  [...path]/
     NotFound.js   ← rendered for any unmatched URL
     NotFound.xml
 ```

@@ -279,20 +279,30 @@ export function buildRoutes(modules) {
     routes.push(route)
   }
 
-  // Sort routes: static routes first, then dynamic, then catch-all
+  // Sort routes: static first, then dynamic (fewer params first), catch-all last
   routes.sort((a, b) => {
     const aPath = a.path[0]
     const bPath = b.path[0]
 
-    // Static routes come first
+    // Catch-all :name(.*) routes always come last
+    const aIsCatchAll = aPath.includes('(.*)')
+    const bIsCatchAll = bPath.includes('(.*)')
+    if (!aIsCatchAll && bIsCatchAll) return -1
+    if (aIsCatchAll && !bIsCatchAll) return 1
+
+    // Static routes before dynamic routes
     const aIsDynamic = isDynamicRoute(aPath)
     const bIsDynamic = isDynamicRoute(bPath)
 
     if (!aIsDynamic && bIsDynamic) return -1
     if (aIsDynamic && !bIsDynamic) return 1
 
-    // Among dynamic routes, fewer params come first
+    // Among dynamic routes, more specific (longer path) comes first
     if (aIsDynamic && bIsDynamic) {
+      const aSegments = aPath.split('/').length
+      const bSegments = bPath.split('/').length
+      if (aSegments !== bSegments) return bSegments - aSegments
+
       const aParamCount = a.params?.length || 0
       const bParamCount = b.params?.length || 0
       return aParamCount - bParamCount
