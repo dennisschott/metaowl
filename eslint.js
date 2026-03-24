@@ -39,11 +39,14 @@ export const eslintConfig = [
       'quotes': ['error', 'single'],
       'comma-dangle': ['error', 'never'],
       'no-undef': 'off'
-    },
+    }
+  },
+  {
     ignores: [
       'node_modules/**',
       'dist/**',
-      'build/**'
+      'build/**',
+      '.metaowl/**'
     ]
   }
 ]

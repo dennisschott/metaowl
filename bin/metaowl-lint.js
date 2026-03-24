@@ -27,8 +27,8 @@ try {
 const defaults = [
   'src/metaowl.js',
   'src/css.js',
-  'src/owl/pages/**',
-  'src/owl/components/**'
+  'src/pages/**',
+  'src/components/**'
 ]
 
 const candidates = lintTargets ?? defaults

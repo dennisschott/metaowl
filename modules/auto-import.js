@@ -23,7 +23,7 @@
  */
 
 import { globSync } from 'glob'
-import { resolve, relative, basename, extname, dirname } from 'path'
+import { resolve, relative, basename, extname, dirname } from 'node:path'
 
 /**
  * Registry of auto-discovered components.
