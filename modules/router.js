@@ -173,7 +173,7 @@ class Router {
     let pattern = routePath
       // Escape forward slashes
       .replace(/\//g, '\\/')
-      // Replace catch-all :name(.*) params — must come before required-param replacement
+      // Replace catch-all :name(.*) params - must come before required-param replacement
       .replace(/:([^/(]+)\(\.\*\)/g, '(.*)')
       // Replace optional params /:name?
       .replace(/\/:([^/(]+)\?/g, '(?:/([^/]+))?')
@@ -273,16 +273,28 @@ class Router {
  * @returns {Promise<object[]>} Resolved route or throws error
  * @throws {NavigationError} If navigation is aborted
  */
+// Tracks which routes arrays have already been augmented with SSG path variants.
+// Using a WeakSet means each distinct array is injected exactly once, even
+// across multiple processRoutes calls with the same array.
+const _injectedRouteSets = new WeakSet()
+
 export async function processRoutes(routes, customPath) {
   // Use custom path for testing if provided
   const targetPath = customPath || document.location.pathname
 
-  // Inject SSG-compatible path variants
-  for (const route of routes) {
-    const originalPaths = [...route.path]
-    for (const path of originalPaths) {
-      if (typeof path === 'string') {
-        injectSystemRoutes(route, path)
+  // Inject SSG-compatible path variants ONCE per routes array.
+  // injectSystemRoutes mutates route.path in-place. Calling it on every
+  // navigation causes the arrays to grow on every call (each injected path
+  // becomes a base for further injections), making route matching
+  // exponentially slower with every navigation.
+  if (!_injectedRouteSets.has(routes)) {
+    _injectedRouteSets.add(routes)
+    for (const route of routes) {
+      const originalPaths = [...route.path]
+      for (const path of originalPaths) {
+        if (typeof path === 'string') {
+          injectSystemRoutes(route, path)
+        }
       }
     }
   }
@@ -560,20 +572,117 @@ export function cancelNavigation() {
 }
 
 /**
+ * Callback for SPA navigation.
+ * Set when the app is initialized.
+ * @type {Function|null}
+ */
+let _spaNavigationCallback = null
+
+/**
+ * Sets the SPA navigation callback.
+ * Called internally by boot().
+ *
+ * @param {Function} callback - Function called during SPA navigation
+ * @internal
+ */
+export function _setSpaNavigationCallback(callback) {
+  _spaNavigationCallback = callback
+}
+
+/**
+ * Flag indicating if SPA navigation is enabled.
+ * @type {boolean}
+ */
+let _spaEnabled = false
+
+/**
+ * Enables or disables SPA navigation.
+ *
+ * @param {boolean} enabled - True to enable SPA navigation
+ */
+export function setSpaMode(enabled) {
+  _spaEnabled = enabled
+}
+
+/**
+ * Checks if SPA navigation is enabled.
+ *
+ * @returns {boolean}
+ */
+export function isSpaMode() {
+  return _spaEnabled
+}
+
+/**
+ * Navigate to a path with SPA navigation (no page reload).
+ * Updates URL via history.pushState and renders the new route.
+ *
+ * @param {string} path - Target path (e.g., "/about")
+ * @param {object} [options] - Navigation options
+ * @param {boolean} [options.replace=false] - Replace current history entry instead of creating new one
+ * @returns {Promise<boolean>} True if navigation successful
+ *
+ * @example
+ * // Normal navigation
+ * await navigateTo('/about')
+ *
+ * // Replace current entry (no back possible)
+ * await navigateTo('/login', { replace: true })
+ */
+export async function navigateTo(path, options = {}) {
+  const { replace = false } = options
+
+  if (!_spaEnabled || !_spaNavigationCallback) {
+    // Fallback: Normal browser navigation
+    if (replace) {
+      window.location.replace(path)
+    } else {
+      window.location.href = path
+    }
+    return false
+  }
+
+  try {
+    // Update URL without page reload
+    if (replace) {
+      window.history.replaceState({ path }, '', path)
+    } else {
+      window.history.pushState({ path }, '', path)
+    }
+
+    // Perform SPA navigation
+    await _spaNavigationCallback(path)
+    return true
+  } catch (error) {
+    console.error('[metaowl] SPA navigation failed:', error)
+    // Fallback to normal navigation on error
+    window.location.href = path
+    return false
+  }
+}
+
+/**
  * Programmatically navigate to a path.
  *
  * @param {string} path - Target path
  * @param {object} [options] - Navigation options
  * @param {boolean} [options.replace=false] - Replace current history entry
  * @param {boolean} [options.reload=true] - Reload the page
+ * @deprecated Use navigateTo() for SPA navigation
  */
 export function navigate(path, options = {}) {
   const { replace = false, reload = true } = options
 
-  if (replace) {
-    window.location.replace(path)
+  if (reload || !_spaEnabled) {
+    // Traditional navigation with page reload
+    if (replace) {
+      window.location.replace(path)
+    } else {
+      window.location.href = path
+    }
   } else {
-    window.location.href = path
+    // SPA navigation
+    navigateTo(path, { replace })
   }
 }
 
@@ -583,7 +692,7 @@ export function navigate(path, options = {}) {
  * @param {string} path - Target path
  */
 export function push(path) {
-  navigate(path, { replace: false })
+  navigateTo(path, { replace: false })
 }
 
 /**
@@ -592,7 +701,7 @@ export function push(path) {
  * @param {string} path - Target path
  */
 export function replace(path) {
-  navigate(path, { replace: true })
+  navigateTo(path, { replace: true })
 }
 
 /**
@@ -633,7 +742,10 @@ export const router = {
   back,
   forward,
   go,
-  navigate
+  navigate,
+  navigateTo,
+  setSpaMode,
+  isSpaMode
 }
 
 /**

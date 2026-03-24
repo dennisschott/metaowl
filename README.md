@@ -36,6 +36,7 @@ All powered by a batteries-included Vite plugin that handles the build pipeline,
   - [Dynamic Routes](#dynamic-routes)
 - [Layouts](#layouts)
 - [Navigation Guards](#navigation-guards)
+- [Link Component](#link-component)
 - [State Management](#state-management-store)
 - [Error Boundaries](#error-boundaries)
 - [i18n / Internationalization](#i18n--internationalization)
@@ -54,6 +55,7 @@ All powered by a batteries-included Vite plugin that handles the build pipeline,
   - [Store](#store)
   - [Layouts API](#layouts-api)
   - [Router Guards](#router-guards-api)
+  - [Link Component API](#link-component-api)
   - [Error Boundary](#error-boundary-api)
   - [i18n](#i18n-api)
   - [Forms](#forms-api)
@@ -77,6 +79,7 @@ All powered by a batteries-included Vite plugin that handles the build pipeline,
 - **Dynamic routes** — support for parameters `[id]`, optional params `[id]?`, and catch-all `[...path]`
 - **Layouts** — share page structures across routes with automatic layout resolution
 - **Navigation guards** — route middleware for authentication, authorization, and redirects
+- **SPA Link component** — `<Link>` for SPA navigation without page reloads and automatic external link detection
 - **State management** — Pinia-like store system with mutations, actions, and getters
 - **App mounting** — zero-config OWL component mounting with template merging
 - **Fetch helper** — thin wrapper around the Fetch API with a configurable base URL and error handler
@@ -430,6 +433,139 @@ export class AdminPage extends Component {
 - `next(false)` — abort navigation
 - `next('/path')` — redirect to path
 - `next(error)` — abort with error
+
+---
+
+## Link Component
+
+The `Link` component provides SPA-style navigation without page reloads. It renders a standard `<a>` element and automatically handles internal navigation via `history.pushState`, while allowing normal browser behavior for external links.
+
+### Setup
+
+Import `Link` from `metaowl` and register it in your component's `static components`:
+
+```js
+import { Component } from '@odoo/owl'
+import { Link } from 'metaowl'
+
+export class MyNav extends Component {
+  static template = 'MyNav'
+  static components = { Link }
+
+  setup() {
+    this.linkClass = (href) => {
+      const base = 'block px-3 py-2 rounded-md text-sm'
+      const active = 'bg-gray-100 text-gray-900'
+      const inactive = 'text-gray-600 hover:bg-gray-100'
+      const isActive = window.location.pathname === href
+      return `${base} ${isActive ? active : inactive}`
+    }
+  }
+}
+```
+
+### Basic Usage
+
+Prop values are OWL expressions — wrap static strings in extra quotes, or pass method calls:
+
+```xml
+<!-- Internal link -->
+<Link to="'/about'">About Us</Link>
+
+<!-- Dynamic target from loop -->
+<Link to="item.href"><t t-esc="item.label"/></Link>
+
+<!-- Computed class via method -->
+<Link to="item.href" class="linkClass(item.href)">
+  <t t-esc="item.label"/>
+</Link>
+
+<!-- External link — opens normally (auto-detected, no SPA intercept) -->
+<Link to="'https://github.com/odoo/owl'" target="'_blank'">
+  OWL Framework
+</Link>
+
+<!-- External with dynamic target, closing sidebar on click -->
+<Link
+  to="link.href"
+  target="link.external ? '_blank' : undefined"
+  t-on-click="props.onClose"
+  class="linkClass(link.href)"
+>
+  <span t-esc="link.label"/>
+</Link>
+```
+
+### Props
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `to` | `string` | Yes | Target URL (internal path or external URL) |
+| `class` | `string` | No | CSS classes for the anchor element |
+| `target` | `string` | No | Target window (`_blank`, `_self`, etc.) |
+| `rel` | `string` | No | Relationship attribute (auto-set to `noopener noreferrer` for external `_blank` links) |
+| `title` | `string` | No | Tooltip text |
+| `download` | `string \| boolean` | No | Download attribute for file downloads |
+| `hreflang` | `string` | No | Language of the linked resource |
+| `type` | `string` | No | MIME type hint |
+| `ping` | `string` | No | Space-separated URLs to ping on click |
+| `referrerpolicy` | `string` | No | Referrer policy override |
+| `media` | `string` | No | Media query hint |
+
+Any additional attribute (`id`, `style`, `aria-*`, `data-*`, etc.) is forwarded directly to the rendered `<a>` element.
+
+### External Link Detection
+
+The component automatically detects external links and performs normal navigation:
+
+- URLs starting with `http://` or `https://`
+- Protocol-relative URLs (`//example.com`)
+- Special protocols: `mailto:`, `tel:`, `ftp:`, etc.
+
+### Programmatic Navigation
+
+Use `navigateTo()` for programmatic navigation in JavaScript:
+
+```js
+import { navigateTo } from 'metaowl'
+
+// Navigate to a new route
+await navigateTo('/dashboard')
+
+// Replace current history entry (no back button)
+await navigateTo('/login', { replace: true })
+```
+
+### Router API
+
+```js
+import { router, navigateTo } from 'metaowl'
+
+// Navigation
+router.push('/path')           // Navigate to path
+router.replace('/path')        // Replace current history entry
+router.navigateTo('/path')     // SPA navigation
+router.back()                  // Go back
+router.forward()               // Go forward
+router.go(-2)                  // Go 2 steps back
+
+// Guards
+router.beforeEach((to, from, next) => { ... })
+router.afterEach((to, from) => { ... })
+
+// State
+router.currentRoute    // Current route object
+router.previousRoute   // Previous route object
+router.isNavigating    // Boolean indicating navigation in progress
+```
+
+### SPA Mode
+
+SPA navigation is enabled by default when using `boot()`. To disable:
+
+```js
+boot(routes, null, { spa: false })
+```
 
 ---
 
@@ -1012,6 +1148,56 @@ router.push('/new-path')
 
 ---
 
+### `Link Component API`
+
+```xml
+<Link to="item.href" class="linkClass(item.href)" target="item.external ? '_blank' : undefined">
+  <t t-esc="item.label"/>
+</Link>
+```
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `to` | `string` | Target URL (required) |
+| `class` | `string` | CSS classes |
+| `target` | `string` | Target window (`_blank`, `_self`) |
+| `rel` | `string` | Link relationship (auto: `noopener noreferrer` for external `_blank`) |
+| `title` | `string` | Tooltip text |
+| `download` | `string \| boolean` | Download attribute |
+| `hreflang` | `string` | Language of the linked resource |
+| `type` | `string` | MIME type hint |
+| `ping` | `string` | URLs to ping on click |
+| `referrerpolicy` | `string` | Referrer policy override |
+| `media` | `string` | Media query hint |
+
+All other attributes (`id`, `style`, `aria-*`, `data-*`, etc.) are forwarded to the `<a>` element.
+
+**Programmatic Navigation:**
+
+```js
+import { navigateTo, router } from 'metaowl'
+
+// Navigate to new route (SPA mode)
+await navigateTo('/dashboard')
+
+// Replace current history entry
+await navigateTo('/login', { replace: true })
+
+// Using router singleton
+router.push('/path')
+router.replace('/path')
+router.back()
+router.forward()
+router.go(-2)
+```
+
+**External Link Detection:**
+- `http://` or `https://` → Normal navigation
+- `//` → Protocol-relative, normal navigation
+- `mailto:`, `tel:`, `ftp:` → Normal navigation
+
+---
+
 ### `Error Boundary API`
 
 | Function | Description |
@@ -1467,6 +1653,12 @@ npx serve -s dist
 ---
 
 ## Changelog
+
+### v0.4.0 (2026-03-24)
+
+**Added:**
+
+- **Link component** added.
 
 ### v0.3.7 (2026-03-24)
 

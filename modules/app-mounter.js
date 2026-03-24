@@ -8,6 +8,7 @@
 import { mount } from '@odoo/owl'
 import { mergeTemplates } from './templates-manager.js'
 import { resolveLayout, getLayout, mountWithLayout } from './layouts.js'
+import { Link } from './link.js'
 
 const _defaults = {
   warnIfNoStaticProps: true,
@@ -16,6 +17,13 @@ const _defaults = {
 }
 
 let _config = { ..._defaults }
+
+/**
+ * Reference to the currently mounted OWL App instance.
+ * Destroyed before each new mount to prevent zombie app accumulation.
+ * @type {import('@odoo/owl').App|null}
+ */
+let _currentApp = null
 
 /**
  * Override or extend the default OWL mount configuration.
@@ -37,11 +45,31 @@ export function configureOwl(config) {
  * @param {object[]} route - Single-element array returned by `processRoutes()`.
  * @returns {Promise<void>}
  */
+/**
+ * Cached merged templates string. Computed once on first navigation;
+ * COMPONENTS (the list of XML files) never changes at runtime so the
+ * result is the same for every mount.
+ * @type {string|null}
+ */
+let _cachedTemplates = null
+
 export async function mountApp(route) {
-  // COMPONENTS is a string[] injected at build time by the metaowl Vite plugin
+  // Load and cache templates on first call; reuse on every subsequent navigation.
+  // Without caching, every navigation re-fetches all XML template files.
   const components = typeof COMPONENTS !== 'undefined' ? COMPONENTS : []
-  const templates = await mergeTemplates(components)
+  if (!_cachedTemplates) {
+    _cachedTemplates = await mergeTemplates(components)
+  }
+  const templates = _cachedTemplates
   const mountElement = document.getElementById('metaowl')
+
+  // Destroy the previous OWL App before mounting a new one.
+  // Without this, every navigation leaves a zombie app running in the background
+  // (scheduler, reactive effects, event listeners) that accumulates and causes freezes.
+  if (_currentApp) {
+    try { _currentApp.destroy() } catch (_) {}
+    _currentApp = null
+  }
   mountElement.innerHTML = ''
 
   const pageComponent = route[0].component
@@ -51,11 +79,26 @@ export async function mountApp(route) {
   const layoutName = resolveLayout(pageComponent, pagePath)
   const LayoutClass = getLayout(layoutName)
 
+  // Base mount configuration with built-in components
+  const baseConfig = {
+    ..._config,
+    templates,
+    components: {
+      Link,
+      't-link': Link
+    }
+  }
+
+  let instance
   if (LayoutClass) {
     // Mount with layout
-    await mountWithLayout(pageComponent, mountElement, { routePath: pagePath, templates })
+    instance = await mountWithLayout(pageComponent, mountElement, { routePath: pagePath, ...baseConfig })
   } else {
     // Mount without layout
-    await mount(pageComponent, mountElement, { ..._config, templates })
+    instance = await mount(pageComponent, mountElement, baseConfig)
   }
+
+  // Store OWL App reference so we can destroy it before the next navigation.
+  // instance.__owl__.app is the underlying App object that owns the scheduler.
+  _currentApp = instance?.__owl__?.app ?? null
 }
