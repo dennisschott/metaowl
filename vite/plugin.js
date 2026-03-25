@@ -1,6 +1,7 @@
+import { createHash } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { resolve, dirname } from 'node:path'
-import { mkdirSync, copyFileSync, cpSync, existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdirSync, cpSync, existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { globSync } from 'glob'
 import { config as dotenvConfig } from 'dotenv'
@@ -227,8 +228,20 @@ export async function metaowlPlugin(options = {}) {
         // Merge all OWL XML templates into a single file
         const xmlFiles = globSync([`${componentsDir}/**/*.xml`, `${pagesDir}/**/*.xml`, `${layoutsDir}/**/*.xml`])
         const mergedXml = mergeXmlFiles(xmlFiles)
-        const templatesPath = resolve(_outDirResolved, 'templates.xml')
-        writeFileSync(templatesPath, mergedXml, 'utf-8')
+
+        // Compute content hash for cache-busting in production
+        const hash = createHash('sha256').update(mergedXml).digest('hex').slice(0, 8)
+        const hashedFilename = `templates.${hash}.xml`
+        writeFileSync(resolve(_outDirResolved, hashedFilename), mergedXml, 'utf-8')
+
+        // Rewrite /templates.xml references in all built HTML and JS files
+        const outputFiles = globSync(['**/*.html', '**/*.js'], { cwd: _outDirResolved, absolute: true })
+        for (const file of outputFiles) {
+          const content = readFileSync(file, 'utf-8')
+          if (content.includes('/templates.xml')) {
+            writeFileSync(file, content.replace(/\/templates\.xml/g, `/${hashedFilename}`), 'utf-8')
+          }
+        }
 
         // Copy assets/images (referenced via absolute URLs in XML — not processed by Vite)
         const srcImages = resolve(projectRoot, root, 'assets', 'images')

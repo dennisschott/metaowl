@@ -1,6 +1,6 @@
 {
   "name": "metaowl",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Lightweight meta-framework for Odoo OWL — file-based routing, app mounting, Fetch helper, Cache, Meta tags, SSG generator, and a Vite plugin.",
   "type": "module",
   "main": "index.js",
@@ -49,7 +49,6 @@
     "globals": "^13.24.0",
     "prettier": "3.5.1",
     "vite": "^8.0.0",
-    "vite-plugin-handlebars": "^2.0.0",
     "vite-tsconfig-paths": "^6.1.1"
   },
   "engines": {
@@ -57,7 +56,8 @@
   },
   "scripts": {
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "lint": "eslint . --ext .js,.ts"
   },
   "devDependencies": {
     "jsdom": "^28.1.0",
