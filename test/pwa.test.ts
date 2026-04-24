@@ -127,8 +127,8 @@ describe('PWA', () => {
   })
 
   describe('checkCapabilities', () => {
-    it('should return capability object', () => {
-      const caps = checkCapabilities()
+    it('should return capability object', async () => {
+      const caps = await checkCapabilities()
 
       expect(typeof caps.serviceWorker).toBe('boolean')
       expect(typeof caps.push).toBe('boolean')
@@ -139,9 +139,39 @@ describe('PWA', () => {
       expect(typeof caps.offline).toBe('boolean')
     })
 
-    it('should detect service worker support', () => {
-      const caps = checkCapabilities()
+    it('should detect service worker support', async () => {
+      const caps = await checkCapabilities()
       expect(caps.serviceWorker).toBeDefined()
+    })
+
+    it('should detect push capability', async () => {
+      const caps = await checkCapabilities()
+      expect(typeof caps.push).toBe('boolean')
+    })
+
+    it('should detect notifications capability', async () => {
+      const caps = await checkCapabilities()
+      expect(typeof caps.notifications).toBe('boolean')
+    })
+
+    it('should detect persistentStorage capability', async () => {
+      const caps = await checkCapabilities()
+      expect(typeof caps.persistentStorage).toBe('boolean')
+    })
+
+    it('should detect offline capability', async () => {
+      const caps = await checkCapabilities()
+      expect(typeof caps.offline).toBe('boolean')
+    })
+
+    it('should include backgroundSync in result', async () => {
+      const caps = await checkCapabilities()
+      expect('backgroundSync' in caps).toBe(true)
+    })
+
+    it('should include addToHomeScreen in result', async () => {
+      const caps = await checkCapabilities()
+      expect('addToHomeScreen' in caps).toBe(true)
     })
   })
 })

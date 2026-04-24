@@ -8,6 +8,7 @@ import {
   formatRelativeTime,
   getLocale,
   i18n,
+  load,
   loadLocaleMessages,
   setLocale,
   t
@@ -182,6 +183,54 @@ describe('i18n', () => {
       expect(typeof i18n.formatDate).toBe('function')
       expect(typeof i18n.formatNumber).toBe('function')
       expect(typeof i18n.formatCurrency).toBe('function')
+    })
+
+    it('exposes load function', () => {
+      expect(typeof i18n.load).toBe('function')
+    })
+  })
+
+  describe('load', () => {
+    it('should set locale and load messages', async () => {
+      const messages = { farewell: 'Farewell' }
+      await load({ locale: 'fr', messages })
+
+      expect(i18n.locale).toBe('fr')
+      expect(t('farewell')).toBe('Farewell')
+    })
+
+    it('should set fallbackLocale via load options', async () => {
+      await load({ locale: 'es', fallbackLocale: 'en' })
+      expect(i18n.fallbackLocale).toBe('en')
+    })
+
+    it('should set document.documentElement.lang', async () => {
+      await load({ locale: 'de' })
+      expect(document.documentElement.lang).toBe('de')
+    })
+
+    it('should load messages asynchronously', async () => {
+      const promise = new Promise((resolve) => {
+        setTimeout(() => resolve({ goodbye: 'Au revoir' }), 10)
+      })
+      await load({ locale: 'fr', messages: promise as any })
+      expect(t('goodbye')).toBe('Au revoir')
+    })
+
+    it('should set locale without messages', async () => {
+      await load({ locale: 'it' })
+      expect(i18n.locale).toBe('it')
+      expect(document.documentElement.lang).toBe('it')
+    })
+
+    it('should merge messages with existing locale messages', async () => {
+      configureI18n({
+        locale: 'en',
+        messages: { en: { existing: 'Existing' } }
+      })
+      await load({ locale: 'en', messages: { newKey: 'New Value' } })
+      expect(t('existing')).toBe('Existing')
+      expect(t('newKey')).toBe('New Value')
     })
   })
 })

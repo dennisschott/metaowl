@@ -23,6 +23,12 @@ interface I18nConfig {
   messages?: LocaleMessages
 }
 
+interface I18nLoadOptions {
+  locale: string
+  messages?: MessageTree | Promise<MessageTree>
+  fallbackLocale?: string
+}
+
 interface I18nState {
   locale: string
   fallbackLocale: string
@@ -87,6 +93,21 @@ export async function loadLocaleMessages(locale: string, messages: MessageTree |
     Object.assign(state.messages[locale], loaded)
   } finally {
     state.loading = false
+  }
+}
+
+export async function load(options: I18nLoadOptions): Promise<void> {
+  const { locale, messages, fallbackLocale } = options
+
+  if (fallbackLocale) {
+    state.fallbackLocale = fallbackLocale
+  }
+
+  state.locale = locale
+  document.documentElement.lang = locale
+
+  if (messages) {
+    await loadLocaleMessages(locale, messages)
   }
 }
 
@@ -188,6 +209,8 @@ export const i18n = {
   get messages(): LocaleMessages { return state.messages },
   configure: configureI18n,
   setLocale,
+  load,
+  loadLocaleMessages,
   t,
   formatDate,
   formatNumber,

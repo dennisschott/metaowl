@@ -340,12 +340,23 @@ export const cache = {
   }
 }
 
-export function checkCapabilities(): CapabilityInfo {
+export async function checkCapabilities(): Promise<CapabilityInfo> {
+  let backgroundSync = false
+
+  if ('serviceWorker' in navigator) {
+    try {
+      const registration = await navigator.serviceWorker.ready
+      backgroundSync = 'sync' in registration
+    } catch {
+      // Service worker not available
+    }
+  }
+
   return {
     serviceWorker: 'serviceWorker' in navigator,
     push: 'PushManager' in window,
     notifications: 'Notification' in window,
-    backgroundSync: false,
+    backgroundSync,
     persistentStorage: Boolean(navigator.storage?.persist),
     addToHomeScreen: !isStandalone(),
     offline: 'serviceWorker' in navigator
