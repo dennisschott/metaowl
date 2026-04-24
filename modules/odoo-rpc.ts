@@ -4,6 +4,8 @@
  * Odoo JSON-RPC Service for MetaOwl applications.
  */
 
+import { MAGIC_STRINGS } from './constants.js'
+
 export interface OdooConfig {
   baseUrl: string
   database: string
@@ -51,8 +53,8 @@ let session: OdooSession | null = null
 let csrfToken: string | null = null
 const authListeners: AuthListener[] = []
 
-const SESSION_KEY = 'metaowl:odoo:session'
-const CSRF_KEY = 'metaowl:odoo:csrf'
+const SESSION_KEY = MAGIC_STRINGS.STORE_SESSION_KEY
+const CSRF_KEY = MAGIC_STRINGS.STORE_CSRF_KEY
 
 export function configure(nextConfig: Partial<OdooConfig>): void {
   config = {
@@ -156,7 +158,7 @@ async function jsonRpc<T = unknown>(service: string, method: string, args: unkno
 
   const setCookie = response.headers.get('set-cookie')
   if (setCookie?.includes('csrf_token')) {
-    const match = setCookie.match(/csrf_token=([^;]+)/)
+    const match = setCookie.match(/csrf_token=([a-zA-Z0-9_-]+)/)
     if (match) {
       csrfToken = match[1] ?? null
       saveSession()

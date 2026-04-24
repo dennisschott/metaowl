@@ -4,13 +4,14 @@
  * Enhanced router with navigation guards support.
  */
 
-type RouteComponent = Function | null
+import { buildSimpleRoutePattern, type OwlComponent } from './constants.js'
+
 type QueryValue = string | string[]
 
 export interface RouteDefinition {
   name: string
   path: string[]
-  component: RouteComponent
+  component: OwlComponent | null
   meta?: Record<string, unknown>
   beforeEnter?: NavigationGuard | null
   [key: string]: unknown
@@ -20,7 +21,7 @@ export interface RouteState {
   name: string
   path: string[]
   fullPath: string
-  component: RouteComponent
+  component: OwlComponent | null
   meta: Record<string, unknown>
   beforeEnter?: NavigationGuard | null
   params: Record<string, string>
@@ -87,19 +88,12 @@ class Router {
 
   pathMatches(routePath: string, currentPath: string): boolean {
     if (!routePath.includes(':') && !routePath.includes('*')) {
-      const normalizedRoute = routePath.replace(/\/$/, '') || '/'
-      const normalizedCurrent = currentPath.replace(/\/$/, '') || '/'
+      const normalizedRoute = (routePath.replace(/\/$/, '') || '/')
+      const normalizedCurrent = (currentPath.replace(/\/$/, '') || '/')
       return normalizedRoute === normalizedCurrent
     }
 
-    let pattern = routePath
-      .replace(/\//g, '\\/')
-      .replace(/:([^/(]+)\(\.\*\)/g, '(.*)')
-      .replace(/\/:([^/(]+)\?/g, '(?:/([^/]+))?')
-      .replace(/:([^/(?\s]+)/g, '([^/]+)')
-      .replace(/\*/g, '(.*)')
-
-    pattern = '^' + pattern + '$'
+    const pattern = buildSimpleRoutePattern(routePath)
     return new RegExp(pattern).test(currentPath)
   }
 

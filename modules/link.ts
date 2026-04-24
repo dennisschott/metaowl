@@ -5,14 +5,13 @@
  */
 
 import { Component, onMounted, onWillUnmount, useState } from '@odoo/owl'
+import { EXTERNAL_URL_REGEX } from './constants.js'
 
 declare global {
   interface Window {
     __metaowlNavigate?: (path: string) => void
   }
 }
-
-const EXTERNAL_URL_REGEX = /^(https?:|\/\/|mailto:|tel:|ftp:|file:|javascript:)/i
 
 interface LinkProps {
   to: string
@@ -45,7 +44,8 @@ function isActiveLink(linkPath: string, currentPath: string): boolean {
 
 export class Link extends Component {
   static template = 'Link'
-  static props = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  static props: any = {
     to: { type: String, optional: false },
     class: { type: String, optional: true },
     activeClass: { type: String, optional: true },
@@ -59,7 +59,7 @@ export class Link extends Component {
     referrerpolicy: { type: String, optional: true },
     media: { type: String, optional: true },
     '*': true
-  } as any
+  }
 
   declare props: LinkProps
   state!: { isActive: boolean }
@@ -71,6 +71,12 @@ export class Link extends Component {
       isActive: false
     })
 
+    this._updateActiveState = () => {
+      if (this.props.activeClass) {
+        this.state.isActive = isActiveLink(this.props.to, document.location.pathname)
+      }
+    }
+
     onMounted(() => {
       this._updateActiveState()
       window.addEventListener('popstate', this._updateActiveState)
@@ -79,12 +85,6 @@ export class Link extends Component {
     onWillUnmount(() => {
       window.removeEventListener('popstate', this._updateActiveState)
     })
-
-    this._updateActiveState = () => {
-      if (this.props.activeClass) {
-        this.state.isActive = isActiveLink(this.props.to, document.location.pathname)
-      }
-    }
   }
 
   get linkClasses(): string {

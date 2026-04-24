@@ -47,6 +47,18 @@ interface MetaowlPluginOptions {
   autoImport?: AutoImportOptions
 }
 
+function isPathSafe(path: string, root: string): boolean {
+  const resolved = resolve(root, path)
+  return resolved.startsWith(resolve(root))
+}
+
+function sanitizeDirOption(path: string, root: string, fallback: string): string {
+  if (!path) return fallback
+  if (isPathSafe(path, root)) return path
+  console.warn(`[metaowl] Path "${path}" escapes root, using default "${fallback}"`)
+  return fallback
+}
+
 function resolveOwlPath(): string {
   return require.resolve('@odoo/owl/dist/owl.es.js', {
     paths: [process.cwd(), dirname(fileURLToPath(import.meta.url))]
@@ -73,13 +85,15 @@ function mergeXmlFiles(xmlPaths: string[]): string {
 }
 
 export async function metaowlPlugin(options: MetaowlPluginOptions = {}): Promise<Plugin[]> {
+  const rootDir = options.root ?? 'src'
+  const resolvedRoot = resolve(process.cwd(), rootDir)
+
   const {
-    root = 'src',
     outDir = '../dist',
     publicDir = '../public',
-    componentsDir = 'src/components',
-    pagesDir = 'src/pages',
-    layoutsDir = 'src/layouts',
+    componentsDir = sanitizeDirOption(options.componentsDir ?? 'src/components', resolvedRoot, 'src/components'),
+    pagesDir = sanitizeDirOption(options.pagesDir ?? 'src/pages', resolvedRoot, 'src/pages'),
+    layoutsDir = sanitizeDirOption(options.layoutsDir ?? 'src/layouts', resolvedRoot, 'src/layouts'),
     frameworkEntry = './node_modules/metaowl/index.js',
     vendorPackages = ['@odoo/owl'],
     autoImport = {},
@@ -145,7 +159,7 @@ export async function metaowlPlugin(options: MetaowlPluginOptions = {}): Promise
           'process.env': safeEnv
         }
 
-        cfg.root = cfg.root ?? root
+        cfg.root = cfg.root ?? rootDir
         cfg.publicDir = cfg.publicDir ?? publicDir
         cfg.appType = cfg.appType ?? 'spa'
 
@@ -165,7 +179,7 @@ export async function metaowlPlugin(options: MetaowlPluginOptions = {}): Promise
           chunkSizeWarningLimit: 1024,
           target: 'esnext',
           rollupOptions: {
-            input: resolve(root, 'index.html'),
+            input: resolve(rootDir, 'index.html'),
             output: {
               manualChunks: {
                 vendor: vendorPackages,
@@ -189,8 +203,8 @@ export async function metaowlPlugin(options: MetaowlPluginOptions = {}): Promise
       name: 'metaowl:app',
       transform(code: string, id: string) {
         if (!id.endsWith('/metaowl.js')) return null
-        const pagesRel = pagesDir.replace(new RegExp(`^${root}[\\/]`), '')
-        const layoutsRel = layoutsDir.replace(new RegExp(`^${root}[\\/]`), '')
+        const pagesRel = pagesDir.replace(new RegExp(`^${rootDir}[\\/]`), '')
+        const layoutsRel = layoutsDir.replace(new RegExp(`^${rootDir}[\\/]`), '')
         return {
           code: code.replace(
             /boot\(\s*\)/,
@@ -204,9 +218,9 @@ export async function metaowlPlugin(options: MetaowlPluginOptions = {}): Promise
       name: 'metaowl:styles',
       transform(code: string, id: string) {
         if (!id.endsWith('/css.js')) return null
-        const compRel = componentsDir.replace(new RegExp(`^${root}[\\/]`), '')
-        const pagesRel = pagesDir.replace(new RegExp(`^${root}[\\/]`), '')
-        const layoutsRel = layoutsDir.replace(new RegExp(`^${root}[\\/]`), '')
+        const compRel = componentsDir.replace(new RegExp(`^${rootDir}[\\/]`), '')
+        const pagesRel = pagesDir.replace(new RegExp(`^${rootDir}[\\/]`), '')
+        const layoutsRel = layoutsDir.replace(new RegExp(`^${rootDir}[\\/]`), '')
         return {
           code: code + '\n' +
             `import.meta.glob('/${compRel}/**/*.{css,scss}', { eager: true })\n` +
@@ -238,7 +252,7 @@ export async function metaowlPlugin(options: MetaowlPluginOptions = {}): Promise
           }
         }
 
-        const srcImages = resolve(projectRoot, root, 'assets', 'images')
+        const srcImages = resolve(projectRoot, rootDir, 'assets', 'images')
         if (existsSync(srcImages)) {
           cpSync(srcImages, resolve(outDirResolved, 'assets', 'images'), { recursive: true })
         }

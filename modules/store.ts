@@ -154,9 +154,10 @@ export class Store {
   reset(): void {
     if (this._config.state) {
       const initialState = this._config.state()
-      Object.keys(this._state).forEach((key) => {
-        delete this._state[key]
-      })
+      const keys = Object.keys(this._state)
+      for (const key of keys) {
+        ;(this._state as Record<string, unknown>)[key] = undefined
+      }
       Object.assign(this._state, initialState)
     }
   }

@@ -8,6 +8,7 @@ import { Component, mount } from '@odoo/owl'
 import { Link } from './link.js'
 import { getLayout, mountWithLayout, resolveLayout } from './layouts.js'
 import { mergeTemplates } from './templates-manager.js'
+import type { OwlComponent } from './constants.js'
 
 declare const COMPONENTS: string[] | undefined
 
@@ -27,7 +28,7 @@ type MountedInstance = Component & {
 }
 
 type AppRoute = {
-  component: Function | null
+  component: OwlComponent | null
   path: string[]
 }
 
@@ -48,7 +49,15 @@ let currentApp: MountedAppHandle | null = null
 let cachedTemplates: string | null = null
 
 export function configureOwl(nextConfig: Record<string, unknown>): void {
-  config = { ...defaults, ...nextConfig }
+  config = {
+    ...defaults,
+    ...nextConfig,
+    translatableAttributes: nextConfig.translatableAttributes
+      ? Array.isArray(nextConfig.translatableAttributes)
+        ? nextConfig.translatableAttributes
+        : [nextConfig.translatableAttributes]
+      : defaults.translatableAttributes
+  }
 }
 
 export async function mountApp(route: AppRoute[]): Promise<void> {

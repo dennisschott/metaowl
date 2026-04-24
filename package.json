@@ -2,6 +2,16 @@
   "name": "metaowl",
   "version": "0.5.0",
   "description": "Lightweight meta-framework for Odoo OWL — file-based routing, app mounting, Fetch helper, Cache, Meta tags, SSG generator, and a Vite plugin.",
+  "author": "Dennis Schott",
+  "license": "LGPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dennisschott/metaowl"
+  },
+  "homepage": "https://metaowl.org",
+  "bugs": {
+    "url": "https://github.com/dennisschott/metaowl/issues"
+  },
   "type": "module",
   "main": "./build/runtime/index.js",
   "exports": {
@@ -16,6 +26,21 @@
     "metaowl-build": "./build/runtime/bin/metaowl-build.js",
     "metaowl-generate": "./build/runtime/bin/metaowl-generate.js",
     "metaowl-lint": "./build/runtime/bin/metaowl-lint.js"
+  },
+  "scripts": {
+    "clean:runtime": "node --input-type=module -e \"import { rmSync } from 'node:fs'; rmSync('build/runtime', { recursive: true, force: true })\"",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint . --ext .js,.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "release:check": "npm run typecheck && npm test",
+    "build:runtime": "npm run clean:runtime && tsc -p tsconfig.build.json && node --input-type=module -e \"import { chmodSync, readdirSync } from 'node:fs'; for (const entry of readdirSync('build/runtime/bin')) { if (entry.endsWith('.js')) chmodSync('build/runtime/bin/' + entry, 0o755); }\"",
+    "release:build": "npm run release:check && npm run build:runtime",
+    "release:pack": "npm run release:check && npm pack --dry-run",
+    "prepack": "npm run build:runtime"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   },
   "files": [
     "build/runtime",
@@ -33,17 +58,7 @@
     "vite",
     "meta-framework"
   ],
-  "author": "Dennis Schott",
-  "license": "LGPL-3.0-only",
   "sideEffects": false,
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/dennisschott/metaowl"
-  },
-  "homepage": "https://metaowl.org",
-  "bugs": {
-    "url": "https://github.com/dennisschott/metaowl/issues"
-  },
   "dependencies": {
     "@eslint/js": "^9.20.1",
     "@odoo/owl": "^2.8.2",
@@ -59,21 +74,6 @@
     "prettier": "3.5.1",
     "vite": "^8.0.0",
     "vite-tsconfig-paths": "^6.1.1"
-  },
-  "engines": {
-    "node": ">=20.0.0"
-  },
-  "scripts": {
-    "clean:runtime": "node --input-type=module -e \"import { rmSync } from 'node:fs'; rmSync('build/runtime', { recursive: true, force: true })\"",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "lint": "eslint . --ext .js,.ts",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "release:check": "npm run typecheck && npm test",
-    "build:runtime": "npm run clean:runtime && tsc -p tsconfig.build.json && node --input-type=module -e \"import { chmodSync, readdirSync } from 'node:fs'; for (const entry of readdirSync('build/runtime/bin')) { if (entry.endsWith('.js')) chmodSync('build/runtime/bin/' + entry, 0o755); }\"",
-    "release:build": "npm run release:check && npm run build:runtime",
-    "release:pack": "npm run release:check && npm pack --dry-run",
-    "prepack": "npm run build:runtime"
   },
   "devDependencies": {
     "@types/jsdom": "^28.0.1",

@@ -4,28 +4,21 @@
  * File-based routing with dynamic route parameter support.
  */
 
-type RouteComponent = Function & {
-  route?: RouteConfig
-}
+import { buildRouteRegexPattern, type OwlComponent, type RouteConfig } from './constants.js'
 
 type RouteModule = {
-  default?: RouteComponent
+  default?: unknown
   [key: string]: unknown
 }
 
 type RouteParams = Record<string, string>
 
-export interface RouteConfig {
-  path?: string
-  meta?: Record<string, unknown>
-  beforeEnter?: (...args: unknown[]) => unknown
-  [key: string]: unknown
-}
+export type { RouteConfig }
 
 export interface BuiltRoute {
   name: string
   path: string[]
-  component: RouteComponent | null
+  component: OwlComponent | null
   params?: string[]
   meta: Record<string, unknown>
   beforeEnter?: (...args: unknown[]) => unknown
@@ -90,12 +83,7 @@ function extractParamNames(filePath: string): string[] {
 }
 
 function buildRegexPattern(path: string): string {
-  let pattern = path.replace(/\//g, '\\/')
-  pattern = pattern.replace(/:([^/(]+)\(\.\*\)/g, '([^/]+(?:/[^/]+)*)')
-  pattern = pattern.replace(/\/:([^/(]+)\?/g, '(?:/([^/]+))?')
-  pattern = pattern.replace(/:([^/(\s]+)/g, '([^/]+)')
-
-  return '^' + pattern + '$'
+  return buildRouteRegexPattern(path)
 }
 
 export function matchRoute(pattern: string, path: string): { params: RouteParams; pattern: string } | null {
@@ -128,28 +116,35 @@ export function isDynamicRoute(path: string): boolean {
   return path.includes(':')
 }
 
-function componentFromModule(mod: RouteModule, key: string): RouteComponent {
-  if (typeof mod.default === 'function') return mod.default
+function componentFromModule(mod: RouteModule, key: string): OwlComponent {
+  if (typeof mod.default === 'function') {
+    return mod.default as unknown as OwlComponent
+  }
 
-  const named = Object.values(mod).find((value): value is RouteComponent => typeof value === 'function')
-  if (!named) {
+  const funcs = Object.values(mod).filter((v): v is OwlComponent => typeof v === 'function')
+  if (funcs.length === 0) {
     throw new Error(`[metaowl] No component export found in "${key}"`)
   }
 
-  return named
+  return funcs[0]
 }
 
 export function buildRoutes(modules: Record<string, RouteModule>): BuiltRoute[] {
   const routes: BuiltRoute[] = []
+  const nameCounts: Record<string, number> = {}
 
   for (const [key, mod] of Object.entries(modules)) {
     const derivedPath = pathFromKey(key)
     const component = componentFromModule(mod, key)
     const routeConfig = component.route || {}
     const routePath = typeof routeConfig.path === 'string' ? routeConfig.path : derivedPath
-    const routeName = routePath === '/'
+    const baseName = routePath === '/'
       ? 'index'
       : routePath.slice(1).replace(/[^a-zA-Z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
+
+    const routeName = nameCounts[baseName] !== undefined
+      ? `${baseName}-${++nameCounts[baseName]}`
+      : (nameCounts[baseName] = 0, baseName)
 
     const route: BuiltRoute = {
       name: routeName,
@@ -256,15 +251,15 @@ export function defineRoute(config: RouteConfig): RouteConfig {
   return config
 }
 
-export function route(config: RouteConfig): (componentClass: RouteComponent) => RouteComponent {
-  return function decorator(componentClass: RouteComponent): RouteComponent {
+export function route(config: RouteConfig): (componentClass: OwlComponent) => OwlComponent {
+  return function decorator(componentClass: OwlComponent): OwlComponent {
     componentClass.route = config
     return componentClass
   }
 }
 
 export function createCatchAllRoute(
-  component: RouteComponent,
+  component: OwlComponent,
   options: { name?: string; meta?: Record<string, unknown> } = {}
 ): BuiltRoute {
   return {

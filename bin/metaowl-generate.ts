@@ -5,7 +5,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { globSync } from 'glob'
-import { banner, cwd, failure, resolveBin, resolveOwnRuntimeBin, run, step, success } from './utils.js'
+import { banner, cwd, resolveBin, resolveOwnRuntimeBin, run, step, success } from './utils.js'
 
 type MetaMap = Record<string, string>
 type TemplateOptions = {

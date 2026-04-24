@@ -289,10 +289,10 @@ export function generateSitemapIndex(sitemaps: SitemapReference[]): string {
 
 function escapeXml(str: string): string {
   return str
-    .replace(/&/g, '&')
-    .replace(/</g, '<')
-    .replace(/>/g, '>')
-    .replace(/"/g, '"')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
     .replace(/'/g, '&#x27;')
 }
 
