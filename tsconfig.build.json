@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "./build/runtime",
+    "rootDir": ".",
+    "declaration": false,
+    "sourceMap": false,
+    "types": ["node"]
+  },
+  "include": [
+    "index.ts",
+    "modules/**/*.ts",
+    "bin/**/*.ts",
+    "vite/**/*.ts"
+  ],
+  "exclude": ["node_modules", "dist", "build", "test/**/*.ts"]
+}

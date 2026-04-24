@@ -1,4 +1,6 @@
 import js from '@eslint/js'
+import tsParser from '@typescript-eslint/parser'
+import tsPlugin from '@typescript-eslint/eslint-plugin'
 import globals from 'globals'
 
 /**
@@ -32,6 +34,33 @@ export const eslintConfig = [
     files: ['**/*.js', '**/*.jsx'],
     rules: {
       'no-unused-vars': ['error', {
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_'
+      }],
+      'semi': ['error', 'never'],
+      'quotes': ['error', 'single'],
+      'comma-dangle': ['error', 'never'],
+      'no-undef': 'off'
+    }
+  },
+  {
+    files: ['**/*.ts', '**/*.tsx'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'module',
+      parser: tsParser,
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+        COMPONENTS: 'readonly'
+      }
+    },
+    plugins: {
+      '@typescript-eslint': tsPlugin
+    },
+    rules: {
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': ['error', {
         argsIgnorePattern: '^_',
         varsIgnorePattern: '^_'
       }],

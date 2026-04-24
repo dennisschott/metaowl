@@ -117,6 +117,18 @@ npm install metaowl
 
 `@odoo/owl` is bundled with metaowl and resolved automatically — no separate installation required.
 
+### Release Workflow
+
+For the package itself, the TypeScript sources remain the source of truth and the publishable runtime files are generated into `build/runtime`.
+
+```bash
+npm run release:check   # typecheck + tests
+npm run build:runtime   # clean build/runtime and emit JS
+npm run release:pack    # full check + build + npm pack --dry-run
+```
+
+`npm pack` and `npm publish` also trigger `prepack`, which rebuilds `build/runtime` automatically.
+
 ---
 
 ## Create a New Project
