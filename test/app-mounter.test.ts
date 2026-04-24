@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, it } from 'vitest'
 import { configureOwl } from '../modules/app-mounter.js'
 
 describe('app-mounter', () => {

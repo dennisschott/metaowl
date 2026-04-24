@@ -44,7 +44,6 @@ function isActiveLink(linkPath: string, currentPath: string): boolean {
 
 export class Link extends Component {
   static template = 'Link'
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   static props: any = {
     to: { type: String, optional: false },
     class: { type: String, optional: true },
