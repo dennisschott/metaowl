@@ -12,6 +12,7 @@ type ComponentClass = typeof Component & {
   layout?: string
   _layout?: string
   layoutOptions?: Record<string, unknown>
+  parentLayout?: string
   route?: {
     meta?: Record<string, unknown>
   } & Record<string, unknown>
@@ -121,6 +122,36 @@ export function getRouteLayout(routePath: string): string | undefined {
   return routeLayouts.get(routePath)
 }
 
+export function setParentLayout(layoutName: string, parentLayoutName: string): void {
+  const layout = getLayout(layoutName)
+  if (!layout) {
+    console.warn(`[metaowl] Cannot set parent for unregistered layout "${layoutName}"`)
+    return
+  }
+  ;(layout as ComponentClass).parentLayout = parentLayoutName
+}
+
+export function getParentLayout(layoutName: string): string | undefined {
+  const layout = getLayout(layoutName)
+  return layout?.parentLayout
+}
+
+export function getLayoutChain(layoutName: string): string[] {
+  const chain: string[] = []
+  let current: string | undefined = layoutName
+
+  while (current) {
+    if (chain.includes(current)) {
+      console.warn(`[metaowl] Circular layout hierarchy detected for "${current}"`)
+      break
+    }
+    chain.push(current)
+    current = getParentLayout(current)
+  }
+
+  return chain
+}
+
 export function createLayoutWrapper(
   layoutComponent: ComponentClass,
   pageComponent: ComponentClass,
@@ -150,6 +181,28 @@ export function createLayoutWrapper(
   } as ComponentClass
 }
 
+export function createNestedLayoutWrapper(
+  layoutChain: ComponentClass[],
+  pageComponent: ComponentClass,
+  props: Record<string, unknown> = {}
+): ComponentClass {
+  if (layoutChain.length === 0) {
+    return pageComponent
+  }
+
+  const [outerLayout, ...innerChain] = layoutChain
+
+  if (innerChain.length === 0) {
+    return createLayoutWrapper(outerLayout, pageComponent, props)
+  }
+
+  return createLayoutWrapper(
+    outerLayout,
+    createNestedLayoutWrapper(innerChain, pageComponent, props) as ComponentClass,
+    props
+  )
+}
+
 export async function mountWithLayout(
   pageComponent: ComponentClass,
   target: HTMLElement,
@@ -159,14 +212,23 @@ export async function mountWithLayout(
   const { routePath, props = {}, templates } = options
 
   const layoutName = resolveLayout(pageComponent, routePath)
-  const LayoutClass = getLayout(layoutName)
+  const layoutChain = getLayoutChain(layoutName)
 
-  if (!LayoutClass) {
+  if (layoutChain.length === 0) {
     console.warn(`[metaowl] Layout "${layoutName}" not found, mounting page without layout`)
     return await mount(pageComponent, target, { ...config, props, templates } as never)
   }
 
-  const WrapperClass = createLayoutWrapper(LayoutClass, pageComponent, props)
+  const layoutClasses = layoutChain
+    .map((name) => getLayout(name))
+    .filter((l): l is ComponentClass => !!l)
+
+  if (layoutClasses.length === 0) {
+    console.warn(`[metaowl] Layout "${layoutName}" not found, mounting page without layout`)
+    return await mount(pageComponent, target, { ...config, props, templates } as never)
+  }
+
+  const WrapperClass = createNestedLayoutWrapper(layoutClasses, pageComponent, props)
   const instance = await mount(WrapperClass, target, { ...config, templates } as never)
 
   currentLayout = instance
@@ -211,6 +273,19 @@ export function defineLayout(
 ): (componentClass: ComponentClass) => ComponentClass {
   return function decorator(componentClass: ComponentClass): ComponentClass {
     componentClass.layout = name
+    componentClass.layoutOptions = options
+    return componentClass
+  }
+}
+
+export function defineNestedLayout(
+  name: string,
+  parentLayout: string,
+  options: Record<string, unknown> = {}
+): (componentClass: ComponentClass) => ComponentClass {
+  return function decorator(componentClass: ComponentClass): ComponentClass {
+    componentClass.layout = name
+    componentClass.parentLayout = parentLayout
     componentClass.layoutOptions = options
     return componentClass
   }

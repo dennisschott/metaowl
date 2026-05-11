@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-04-24
+
+### Added
+
+- **Nested layouts support** — layouts can now have parent-child relationships using `setParentLayout()`, `getParentLayout()`, and `getLayoutChain()`. The `createNestedLayoutWrapper()` function creates wrapper components for multi-level nesting. The `defineNestedLayout()` decorator simplifies declaring nested layouts on components.
+- **Image optimization module** — new `modules/image.ts` with `generateSrcSet()`, `calculateAspectRatio()`, `generateSizesAttribute()`, `createResponsiveImage()`, `prefetchImage()`, `prefetchImages()`, `isImageLoaded()`, `getImageDimensions()`, `observeImageVisibility()`, `swapImageSource()`, and `generateDominantColorPlaceholder()`.
+- **Fonts optimization module** — new `modules/fonts.ts` with `defineFontFace()`, `loadFont()`, `loadFontFamily()`, `isFontLoaded()`, `preloadFont()`, `removeFontPreload()`, `createFontFaceRule()`, `injectFontFaceRules()`, `measureTextWidth()`, `estimateFontMetrics()`, `adjustFontForFout()`, and `getFontLoadStatus()`.
+
+### Changed
+
+- **TypeScript migration completed** — the framework source, Vite integration, CLI entrypoints,
+  and test suite now use TypeScript as the primary source of truth while preserving the existing
+  public API and runtime behavior.
+- **Runtime build output separated from source** — publishable JavaScript is now emitted to
+  `build/runtime`, and package `main`, `exports`, and `bin` entries resolve from that generated
+  runtime output.
+
+### Removed
+
+- **Redundant source JavaScript files** — legacy hand-maintained `.js` source files in `modules/`,
+  `bin/`, `vite/`, and the root entrypoint were removed in favor of the TypeScript sources and the
+  generated runtime build.
+
+### Added
+
+- **Release build workflow** — added dedicated runtime build and release helper scripts for
+  clean runtime generation, release checks, and package dry-run validation.
+
 ## [0.5.0] - 2026-04-24
 
 ### Changed

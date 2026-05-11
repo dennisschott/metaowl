@@ -3,12 +3,16 @@ import {
   buildLayouts,
   clearLayouts,
   createLayoutWrapper,
+  createNestedLayoutWrapper,
   defineLayout,
+  defineNestedLayout,
   discoverLayouts,
   getCurrentLayout,
   getDefaultLayout,
   getLayout,
+  getLayoutChain,
   getLayoutNames,
+  getParentLayout,
   getRouteLayout,
   hasLayout,
   layout,
@@ -16,6 +20,7 @@ import {
   registerLayout,
   resolveLayout,
   setDefaultLayout,
+  setParentLayout,
   setRouteLayout,
   subscribeToLayouts,
   unregisterLayout
@@ -149,6 +154,8 @@ import {
 } from './modules/pwa.js'
 import Cache from './modules/cache.js'
 import Fetch from './modules/fetch.js'
+import * as Fonts from './modules/fonts.js'
+import { ImageOptimizer } from './modules/image.js'
 import * as Meta from './modules/meta.js'
 import { Store, createPersistencePlugin, createStore } from './modules/store.js'
 
@@ -293,14 +300,19 @@ export {
   setRouteLayout,
   getRouteLayout,
   createLayoutWrapper,
+  createNestedLayoutWrapper,
   mountWithLayout,
   getCurrentLayout,
   subscribeToLayouts,
   clearLayouts,
   layout,
   defineLayout,
+  defineNestedLayout,
   buildLayouts,
-  discoverLayouts
+  discoverLayouts,
+  setParentLayout,
+  getParentLayout,
+  getLayoutChain
 }
 export {
   processRoutes,
@@ -426,3 +438,4 @@ export {
   checkCapabilities,
   PWA
 }
+export { ImageOptimizer as Image, Fonts }

@@ -3,16 +3,21 @@ import {
   buildLayouts,
   clearLayouts,
   createLayoutWrapper,
+  createNestedLayoutWrapper,
   defineLayout,
+  defineNestedLayout,
   getDefaultLayout,
   getLayout,
+  getLayoutChain,
   getLayoutNames,
+  getParentLayout,
   getRouteLayout,
   hasLayout,
   layout,
   registerLayout,
   resolveLayout,
   setDefaultLayout,
+  setParentLayout,
   setRouteLayout,
   subscribeToLayouts,
   unregisterLayout
@@ -387,6 +392,118 @@ describe('Layouts', () => {
       buildLayouts(modules as any)
 
       expect(hasLayout('test')).toBe(true)
+    })
+  })
+
+  describe('nested layouts', () => {
+    class OuterLayout extends MockComponent {
+      static template = '<div class="outer"><t t-slot="default"/></div>'
+    }
+
+    class MiddleLayout extends MockComponent {
+      static template = '<div class="middle"><t t-slot="default"/></div>'
+    }
+
+    class InnerLayout extends MockComponent {
+      static template = '<div class="inner"><t t-slot="default"/></div>'
+    }
+
+    beforeEach(() => {
+      clearLayouts()
+      registerLayout('outer', OuterLayout as any)
+      registerLayout('middle', MiddleLayout as any)
+      registerLayout('inner', InnerLayout as any)
+    })
+
+    describe('setParentLayout / getParentLayout', () => {
+      it('sets parent layout for a layout', () => {
+        setParentLayout('middle', 'outer')
+
+        expect(getParentLayout('middle')).toBe('outer')
+      })
+
+      it('returns undefined for layout without parent', () => {
+        expect(getParentLayout('outer')).toBeUndefined()
+      })
+
+      it('warns when setting parent for unregistered layout', () => {
+        const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+        setParentLayout('nonexistent', 'outer')
+
+        expect(consoleSpy).toHaveBeenCalledWith('[metaowl] Cannot set parent for unregistered layout "nonexistent"')
+        consoleSpy.mockRestore()
+      })
+    })
+
+    describe('getLayoutChain', () => {
+      it('returns single layout when no parent', () => {
+        const chain = getLayoutChain('outer')
+
+        expect(chain).toEqual(['outer'])
+      })
+
+      it('returns chain of nested layouts', () => {
+        setParentLayout('middle', 'outer')
+        setParentLayout('inner', 'middle')
+
+        const chain = getLayoutChain('inner')
+
+        expect(chain).toEqual(['inner', 'middle', 'outer'])
+      })
+
+      it('detects circular layout hierarchy', () => {
+        setParentLayout('middle', 'outer')
+        setParentLayout('outer', 'middle')
+
+        const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+        getLayoutChain('inner')
+
+        expect(consoleSpy).toHaveBeenCalledWith('[metaowl] Circular layout hierarchy detected for "middle"')
+        consoleSpy.mockRestore()
+      })
+    })
+
+    describe('createNestedLayoutWrapper', () => {
+      it('creates wrapper for single layout', () => {
+        const Wrapper = createNestedLayoutWrapper([OuterLayout as any], MockComponent as any)
+
+        expect(Wrapper).toBeDefined()
+        expect(typeof Wrapper).toBe('function')
+      })
+
+      it('creates wrapper for multiple nested layouts', () => {
+        const Wrapper = createNestedLayoutWrapper(
+          [OuterLayout as any, MiddleLayout as any, InnerLayout as any],
+          MockComponent as any
+        )
+
+        expect(Wrapper).toBeDefined()
+        expect(typeof Wrapper).toBe('function')
+      })
+
+      it('returns page component when chain is empty', () => {
+        const result = createNestedLayoutWrapper([], MockComponent as any)
+
+        expect(result).toBe(MockComponent)
+      })
+    })
+
+    describe('defineNestedLayout decorator', () => {
+      it('sets layout and parentLayout properties', () => {
+        class NestedPage extends MockComponent {}
+        defineNestedLayout('inner', 'outer')(NestedPage as any)
+
+        expect((NestedPage as any).layout).toBe('inner')
+        expect((NestedPage as any).parentLayout).toBe('outer')
+      })
+
+      it('sets layoutOptions', () => {
+        class NestedPage extends MockComponent {}
+        defineNestedLayout('inner', 'outer', { persistent: true })(NestedPage as any)
+
+        expect((NestedPage as any).layoutOptions).toEqual({ persistent: true })
+      })
     })
   })
 })

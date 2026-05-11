@@ -17,7 +17,7 @@ metaowl is a complete solution for building OWL applications with everything you
 
 **Developer Experience:** Composables for common patterns (auth, localStorage, fetching), form handling with validation, error boundaries, and internationalization.
 
-**SEO & PWA:** Sitemap/robots.txt generation, structured data support, service worker integration, web app manifest, and push notifications.
+**SEO & PWA:** Sitemap/robots.txt generation, structured data support, image optimization with srcset generation, font optimization with preloading, service worker integration, web app manifest, and push notifications.
 
 **Testing & Quality:** Mock stores, router mocking, component testing utilities, plus bundled ESLint and PostCSS configs.
 
@@ -44,6 +44,8 @@ All powered by a batteries-included Vite plugin that handles the build pipeline,
 - [Auto-Import](#auto-import)
 - [Odoo JSON-RPC Service](#odoo-json-rpc-service)
 - [Composables / Hooks](#composables--hooks)
+- [Image Optimization](#image-optimization)
+- [Font Optimization](#font-optimization)
 - [CLI Reference](#cli-reference)
 - [API Reference](#api-reference)
   - [boot](#bootroutes)
@@ -61,6 +63,8 @@ All powered by a batteries-included Vite plugin that handles the build pipeline,
   - [Forms](#forms-api)
   - [OdooService](#odooservice-api)
   - [Composables](#composables-api)
+- [Image API](#image-api)
+- [Fonts API](#fonts-api)
 - [Vite Plugin](#vite-plugin)
   - [metaowlPlugin](#metaowlpluginoptions)
   - [metaowlConfig](#metaowlconfigoptions)
@@ -93,6 +97,8 @@ All powered by a batteries-included Vite plugin that handles the build pipeline,
 - **Composables** — reusable hooks for auth, localStorage, fetching, and more
 - **Testing Utilities** — mock store, router mocking, component mount helpers
 - **SEO Utils** — sitemap, robots.txt, JSON-LD, Open Graph, Twitter Cards
+- **Image Optimization** — responsive srcset generation, lazy loading, placeholder support, dominant color extraction
+- **Font Optimization** — FontFace creation, font preloading, @font-face CSS generation, FOUT handling
 - **PWA Support** — service worker, manifest generation, push notifications
 - **SSG generator** — statically pre-renders HTML pages with correct meta tags at build time
 - **Vite plugin** — handles `COMPONENTS` injection, XML template copying, CSS auto-import, chunk splitting, and env filtering
@@ -388,6 +394,37 @@ If no layout is specified, the `default` layout is used automatically.
   </t>
 </templates>
 ```
+
+### Nested Layouts
+
+Layouts can be nested in a parent-child hierarchy. Use `setParentLayout()` to define relationships:
+
+```js
+import { setParentLayout, getLayoutChain } from 'metaowl'
+
+// Define layout hierarchy
+setParentLayout('inner', 'middle')
+setParentLayout('middle', 'outer')
+
+// Get the full chain for a layout
+const chain = getLayoutChain('inner')
+// ['inner', 'middle', 'outer']
+```
+
+Or use the `defineNestedLayout()` decorator:
+
+```js
+import { defineNestedLayout } from 'metaowl'
+
+export class AdminDashboard extends Component {
+  static template = 'AdminDashboard'
+  static layout = 'admin-dashboard'
+}
+
+defineNestedLayout('admin-dashboard', 'admin-base')(AdminDashboard)
+```
+
+When a page uses `admin-dashboard` layout, it's rendered with: `outer > middle > admin-dashboard > page`.
 
 ---
 
@@ -901,6 +938,98 @@ class MyComponent extends Component {
 
 ---
 
+## Image Optimization
+
+Responsive image handling with srcset generation, lazy loading, and placeholder support:
+
+```js
+import { Image } from 'metaowl'
+
+// Generate srcset for responsive images
+const srcset = Image.generateSrcSet('https://example.com/image.jpg', [320, 640, 960, 1280])
+// "https://example.com/image.jpg?width=320&quality=80 320w, ..."
+
+// Create a fully configured responsive image object
+const responsive = Image.createResponsiveImage({
+  src: 'https://example.com/hero.jpg',
+  alt: 'Hero image',
+  widths: [640, 1024, 1920],
+  lazy: true,
+  placeholder: true
+})
+// Returns: { src, srcset, loading: 'lazy', decoding: 'async', placeholder, ... }
+```
+
+**Image utilities:**
+
+| Function | Description |
+|---|---|
+| `generateSrcSet(src, widths, options)` | Generates responsive srcset string |
+| `calculateAspectRatio(width, height)` | Computes aspect ratio as `W/H` |
+| `generateSizesAttribute(src, breakpoints)` | Generates sizes attribute with breakpoints |
+| `createResponsiveImage(options)` | Creates responsive image object |
+| `prefetchImage(src)` / `prefetchImages(sources)` | Prefetch images for faster loading |
+| `isImageLoaded(img)` | Check if image has finished loading |
+| `getImageDimensions(src)` | Get natural width/height of image |
+| `observeImageVisibility(img, callback)` | IntersectionObserver for lazy loading |
+| `swapImageSource(img, newSrc, newSrcset)` | Swap src/srcset atomically |
+| `generateDominantColorPlaceholder(src)` | Extract dominant color as placeholder |
+
+---
+
+## Font Optimization
+
+Font loading and management with preloading and FOUT (Flash of Unstyled Text) handling:
+
+```js
+import { Fonts } from 'metaowl'
+
+// Define and load a font
+const fontFace = await Fonts.loadFont({
+  family: 'Inter',
+  src: 'https://fonts.example.com/inter.woff2',
+  weight: 'normal',
+  display: 'swap'
+})
+
+// Preload font for critical text
+Fonts.preloadFont('Inter', 'https://fonts.example.com/inter.woff2')
+
+// Generate @font-face CSS rule
+const cssRule = Fonts.createFontFaceRule({
+  family: 'Inter',
+  src: 'https://fonts.example.com/inter.woff2',
+  weight: 'bold',
+  display: 'optional'
+})
+// @font-face { font-family: 'Inter'; src: url("..."); font-weight: bold; font-display: optional; }
+
+// Inject font faces into document
+Fonts.injectFontFaceRules({
+  family: 'Inter',
+  src: ['woff2', 'woff'].map(f => `https://fonts.example.com/${f}`),
+  weight: '400 700'
+})
+```
+
+**Font utilities:**
+
+| Function | Description |
+|---|---|
+| `defineFontFace(options)` | Creates a FontFace object |
+| `loadFont(options)` | Loads font and tracks it |
+| `loadFontFamily(family, variants)` | Load multiple variants |
+| `isFontLoaded(family, weight?)` | Check if font is loaded |
+| `preloadFont(family, src, options)` | Add preload link for font |
+| `removeFontPreload(family, weight?)` | Remove preload link |
+| `createFontFaceRule(options)` | Generate @font-face CSS |
+| `injectFontFaceRules(options)` | Inject @font-face rules |
+| `measureTextWidth(text, font, size)` | Measure rendered text width |
+| `adjustFontForFout(el, fallback, timeout)` | Handle FOUT gracefully |
+| `getFontLoadStatus()` | Get loaded fonts status |
+
+---
+
 ## CLI Reference
 
 metaowl ships four CLI commands that use its own bundled Vite, Prettier, and ESLint binaries — no need to install them separately in your project.
@@ -1119,11 +1248,24 @@ Functions for layout management.
 
 | Function | Description |
 |---|---|
-| `registerLayout(name, Component)` | Register a layout |
+| `registerLayout(name, Component, options?)` | Register a layout |
+| `unregisterLayout(name)` | Remove a layout |
 | `getLayout(name)` | Get layout component by name |
+| `hasLayout(name)` | Check if layout exists |
+| `getLayoutNames()` | Get all registered layout names |
 | `setDefaultLayout(name)` | Set default layout |
+| `getDefaultLayout()` | Get default layout name |
 | `resolveLayout(Component, path?)` | Resolve layout for component |
+| `setRouteLayout(routePath, layoutName)` | Set layout for a route |
+| `getRouteLayout(routePath)` | Get layout for a route |
+| `setParentLayout(layoutName, parentName)` | Set parent-child relationship |
+| `getParentLayout(layoutName)` | Get parent layout name |
+| `getLayoutChain(layoutName)` | Get full layout chain |
+| `createNestedLayoutWrapper(layouts, page, props)` | Create nested layout wrapper |
 | `subscribeToLayouts(callback)` | Listen to layout events |
+| `clearLayouts()` | Clear all layouts |
+| `defineLayout(name, options?)` | Decorator for layout |
+| `defineNestedLayout(name, parent, options?)` | Decorator for nested layout |
 
 **Component Layout Property:**
 
@@ -1454,6 +1596,117 @@ const { state, data, execute, isLoading, isSuccess, isError } =
 
 ```ts
 const { value, set, get, remove, clear } = useCache('user-prefs', {})
+```
+
+---
+
+### `Image API`
+
+Image optimization utilities.
+
+```ts
+import { Image } from 'metaowl'
+
+// Generate srcset for responsive images
+Image.generateSrcSet('https://example.com/image.jpg', [320, 640, 960])
+
+// Calculate aspect ratio
+Image.calculateAspectRatio(1920, 1080)  // "16/9"
+
+// Generate sizes attribute
+Image.generateSizesAttribute('https://example.com/image.jpg', {
+  '(min-width: 1024px)': 1000,
+  '(min-width: 768px)': 800
+})
+
+// Create responsive image object
+const responsive = Image.createResponsiveImage({
+  src: 'https://example.com/hero.jpg',
+  alt: 'Hero',
+  widths: [320, 640, 1024],
+  lazy: true,
+  placeholder: true
+})
+
+// Prefetch images
+await Image.prefetchImages(['/img1.jpg', '/img2.jpg'])
+
+// Check if loaded
+Image.isImageLoaded(imgElement)
+
+// Get dimensions
+const dims = await Image.getImageDimensions('https://example.com/image.jpg')
+
+// Observe visibility
+const observer = Image.observeImageVisibility(imgElement, (visible) => {
+  if (visible) loadHighResImage()
+})
+
+// Swap source
+Image.swapImageSource(imgElement, '/new-image.jpg', '/new-image-2x.jpg 2x')
+
+// Generate dominant color placeholder
+const placeholder = await Image.generateDominantColorPlaceholder(src)
+```
+
+---
+
+### `Fonts API`
+
+Font optimization utilities.
+
+```ts
+import { Fonts } from 'metaowl'
+
+// Define a font face
+const fontFace = Fonts.defineFontFace({
+  family: 'Inter',
+  src: 'https://fonts.example.com/inter.woff2',
+  weight: '400',
+  style: 'normal',
+  display: 'swap'
+})
+
+// Load and track a font
+await Fonts.loadFont({
+  family: 'Inter',
+  src: 'https://fonts.example.com/inter.woff2'
+})
+
+// Check if loaded
+Fonts.isFontLoaded('Inter')  // true
+
+// Preload a font
+Fonts.preloadFont('Inter', 'https://fonts.example.com/inter.woff2')
+
+// Remove preload link
+Fonts.removeFontPreload('Inter')
+
+// Generate @font-face CSS rule
+const rule = Fonts.createFontFaceRule({
+  family: 'Inter',
+  src: 'https://fonts.example.com/inter.woff2',
+  weight: 'bold'
+})
+
+// Inject @font-face rules into document
+Fonts.injectFontFaceRules({
+  family: 'Inter',
+  src: ['woff2', 'woff'].map(f => `https://fonts.example.com/${f}`),
+  weight: '400 700'
+})
+
+// Measure text width
+Fonts.measureTextWidth('Hello', 'Inter', 16)
+
+// Adjust for FOUT
+await Fonts.adjustFontForFout(element, 'sans-serif', 3000)
+
+// Get loaded font status
+Fonts.getFontLoadStatus()  // { 'Inter': true }
+
+// Clear all loaded fonts
+Fonts.clearLoadedFonts()
 ```
 
 ---
